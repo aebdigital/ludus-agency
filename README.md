@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ludus — Theater School Student Database
 
-## Getting Started
+A polished SaaS demo for managing a theater school's student records: physical/casting
+attributes, parent documents, photos & videos, productions and more. **All data is
+hardcoded** for now (see [`lib/data.ts`](lib/data.ts)) — no backend required.
 
-First, run the development server:
+Built with **Next.js 16 (App Router)**, **TypeScript**, **Tailwind CSS v4**, and a small
+hand-rolled **shadcn-style** component kit.
+
+## Run it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm run build && npm run start   # production build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The UI is in **Slovak**.
 
-## Learn More
+| Route | What's there |
+|-------|--------------|
+| `/` | Redirects to `/students` |
+| `/students` | Student directory with **grid/table views** and rich filtering: search, program, status, eye color, hair color, gender, age range, height range, casting-ready and pending-documents toggles, plus sorting |
+| `/students/[id]` | Student profile — casting attributes (height, weight, eyes, hair, shoe, clothing, voice), personal details, guardian & emergency contacts, skills/languages, bio, and tabs for **Documents** and **Media** (photos & videos) — each student's files live on their own profile |
+| `/productions` | Productions board with casting progress |
+| `/settings` | Studio profile, configurable record fields, team access |
 
-To learn more about Next.js, take a look at the following resources:
+## Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/                 routes (App Router)
+components/ui/        shadcn-style primitives (button, card, badge, tabs, table, …)
+components/shared/    badges, student card, media tile, page header
+components/layout/    sidebar + topbar app shell
+lib/data.ts          ← hardcoded student / document / media data
+lib/utils.ts         cn(), gradient + date helpers
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To wire up a real backend later, replace the exports in `lib/data.ts` with API/database
+calls — the component layer stays the same.
