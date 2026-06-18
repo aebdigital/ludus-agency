@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Clapperboard, Settings, Drama } from "lucide-react";
+import { Users, Clapperboard, Settings, Drama, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { label: "Študenti", href: "/students", icon: Users },
   { label: "Projekty", href: "/productions", icon: Clapperboard },
+  { label: "Prihláška", href: "/prihlaska", icon: ClipboardList },
   { label: "Nastavenia", href: "/settings", icon: Settings },
 ];
 
