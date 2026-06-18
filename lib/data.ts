@@ -5,14 +5,9 @@
 
 import { computeAge } from "./utils";
 
-export type Program =
-  | "Herectvo"
-  | "Muzikál"
-  | "Tanec"
-  | "Spev"
-  | "Technika a javisko";
+export type Program = "Reklama" | "Film/seriál" | "Iné";
 
-export type Status = "Aktívny" | "Konkurz" | "Na voľne" | "Absolvent";
+export type Status = "Aktívny" | "Konkurz" | "Neaktívny";
 
 export type DocumentKind =
   | "Súhlas rodiča"
@@ -76,6 +71,9 @@ export interface Student {
   skills: string[];
   languages: string[];
   castingReadiness: number; // 0-100
+  // Vlastný kontakt dieťaťa (nepovinné)
+  phone?: string;
+  email?: string;
   // Rodič / kontakt
   guardianName: string;
   guardianRelation: string;
@@ -126,7 +124,7 @@ export const students: Student[] = [
     age: 18,
     city: "Bratislava",
     status: "Aktívny",
-    program: "Muzikál",
+    program: "Reklama",
     cohort: "3. ročník · Súbor A",
     enrolledOn: "2022-09-01",
     heightCm: 168,
@@ -173,7 +171,7 @@ export const students: Student[] = [
     age: 16,
     city: "Trenčín",
     status: "Aktívny",
-    program: "Herectvo",
+    program: "Film/seriál",
     cohort: "2. ročník · Súbor B",
     enrolledOn: "2023-09-01",
     heightCm: 179,
@@ -217,7 +215,7 @@ export const students: Student[] = [
     age: 15,
     city: "Nitra",
     status: "Aktívny",
-    program: "Tanec",
+    program: "Reklama",
     cohort: "1. ročník · Základy",
     enrolledOn: "2024-09-01",
     heightCm: 162,
@@ -261,7 +259,7 @@ export const students: Student[] = [
     age: 19,
     city: "Trnava",
     status: "Aktívny",
-    program: "Herectvo",
+    program: "Film/seriál",
     cohort: "4. ročník · Maturitný",
     enrolledOn: "2021-09-01",
     heightCm: 174,
@@ -306,7 +304,7 @@ export const students: Student[] = [
     age: 15,
     city: "Komárno",
     status: "Konkurz",
-    program: "Muzikál",
+    program: "Reklama",
     cohort: "Uchádzači",
     enrolledOn: "2026-05-20",
     heightCm: 158,
@@ -346,8 +344,8 @@ export const students: Student[] = [
     dateOfBirth: "2008-09-30",
     age: 17,
     city: "Žilina",
-    status: "Na voľne",
-    program: "Technika a javisko",
+    status: "Neaktívny",
+    program: "Iné",
     cohort: "2. ročník · Produkčný tím",
     enrolledOn: "2023-09-01",
     heightCm: 182,
@@ -387,8 +385,8 @@ export const students: Student[] = [
     dateOfBirth: "2006-12-08",
     age: 19,
     city: "Banská Bystrica",
-    status: "Absolvent",
-    program: "Spev",
+    status: "Neaktívny",
+    program: "Film/seriál",
     cohort: "Ročník 2025",
     enrolledOn: "2020-09-01",
     heightCm: 165,
@@ -430,7 +428,7 @@ export const students: Student[] = [
     age: 17,
     city: "Košice",
     status: "Aktívny",
-    program: "Muzikál",
+    program: "Reklama",
     cohort: "2. ročník · Súbor B",
     enrolledOn: "2023-09-01",
     heightCm: 176,
@@ -474,7 +472,7 @@ export const students: Student[] = [
     age: 15,
     city: "Poprad",
     status: "Aktívny",
-    program: "Herectvo",
+    program: "Film/seriál",
     cohort: "1. ročník · Základy",
     enrolledOn: "2024-09-01",
     heightCm: 160,
@@ -515,7 +513,7 @@ export const students: Student[] = [
     age: 18,
     city: "Bratislava",
     status: "Aktívny",
-    program: "Spev",
+    program: "Film/seriál",
     cohort: "3. ročník · Súbor A",
     enrolledOn: "2022-09-01",
     heightCm: 181,
@@ -559,7 +557,7 @@ export const students: Student[] = [
     age: 16,
     city: "Zvolen",
     status: "Aktívny",
-    program: "Tanec",
+    program: "Reklama",
     cohort: "2. ročník · Súbor B",
     enrolledOn: "2023-09-01",
     heightCm: 170,
@@ -602,7 +600,7 @@ export const students: Student[] = [
     age: 15,
     city: "Prešov",
     status: "Konkurz",
-    program: "Technika a javisko",
+    program: "Iné",
     cohort: "Uchádzači",
     enrolledOn: "2026-05-25",
     heightCm: 172,
@@ -643,25 +641,17 @@ export function getStudent(id: string) {
   return students.find((s) => s.id === id);
 }
 
-export const PROGRAMS: Program[] = [
-  "Herectvo",
-  "Muzikál",
-  "Tanec",
-  "Spev",
-  "Technika a javisko",
-];
+export const PROGRAMS: Program[] = ["Reklama", "Film/seriál", "Iné"];
 
-export const STATUSES: Status[] = ["Aktívny", "Konkurz", "Na voľne", "Absolvent"];
+export const STATUSES: Status[] = ["Aktívny", "Konkurz", "Neaktívny"];
 
 export const EYE_COLORS = [...new Set(students.map((s) => s.eyeColor))].sort();
 export const HAIR_COLORS = [...new Set(students.map((s) => s.hairColor))].sort();
 
 export const programAccent: Record<Program, string> = {
-  Herectvo: "oklch(0.55 0.18 25)",
-  Muzikál: "oklch(0.55 0.19 300)",
-  Tanec: "oklch(0.6 0.15 200)",
-  Spev: "oklch(0.62 0.14 150)",
-  "Technika a javisko": "oklch(0.6 0.05 260)",
+  Reklama: "oklch(0.55 0.19 300)",
+  "Film/seriál": "oklch(0.55 0.18 25)",
+  Iné: "oklch(0.6 0.05 260)",
 };
 
 export const TEACHERS: string[] = [

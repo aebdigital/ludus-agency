@@ -6,11 +6,13 @@ import type { Project } from "@/lib/projects";
 
 const SKEY = "ludus.students.v1";
 const PKEY = "ludus.projects.v1";
+const EKEY = "ludus.studentEdits.v1";
 
 const EMPTY_PROJECTS: Project[] = [];
 
 let customStudents: Student[] = [];
 let customProjects: Project[] = [];
+let edits: Record<string, Partial<Student>> = {};
 let loaded = false;
 
 let studentsSnapshot: Student[] = baseStudents;
@@ -19,9 +21,12 @@ let projectsSnapshot: Project[] = EMPTY_PROJECTS;
 const listeners = new Set<() => void>();
 
 function recompute() {
-  studentsSnapshot = customStudents.length
+  const base = customStudents.length
     ? [...customStudents, ...baseStudents]
     : baseStudents;
+  studentsSnapshot = Object.keys(edits).length
+    ? base.map((s) => (edits[s.id] ? { ...s, ...edits[s.id] } : s))
+    : base;
   projectsSnapshot = customProjects.length ? customProjects : EMPTY_PROJECTS;
 }
 
@@ -36,6 +41,11 @@ function load() {
     customProjects = JSON.parse(localStorage.getItem(PKEY) || "[]");
   } catch {
     customProjects = [];
+  }
+  try {
+    edits = JSON.parse(localStorage.getItem(EKEY) || "{}");
+  } catch {
+    edits = {};
   }
   loaded = true;
   recompute();
@@ -53,7 +63,7 @@ function subscribe(cb: () => void) {
   }
   listeners.add(cb);
   const onStorage = (e: StorageEvent) => {
-    if (e.key === SKEY || e.key === PKEY) {
+    if (e.key === SKEY || e.key === PKEY || e.key === EKEY) {
       loaded = false;
       load();
       emit();
@@ -82,6 +92,33 @@ export function addProject(p: Project) {
   load();
   customProjects = [p, ...customProjects];
   if (typeof window !== "undefined") {
+    localStorage.setItem(PKEY, JSON.stringify(customProjects));
+  }
+  recompute();
+  emit();
+}
+
+export function updateStudent(id: string, patch: Partial<Student>) {
+  load();
+  edits[id] = { ...edits[id], ...patch };
+  if (typeof window !== "undefined") {
+    localStorage.setItem(EKEY, JSON.stringify(edits));
+  }
+  recompute();
+  emit();
+}
+
+export function updateProject(id: string, patch: Partial<Project>) {
+  load();
+  let changed = false;
+  customProjects = customProjects.map((p) => {
+    if (p.id === id) {
+      changed = true;
+      return { ...p, ...patch };
+    }
+    return p;
+  });
+  if (changed && typeof window !== "undefined") {
     localStorage.setItem(PKEY, JSON.stringify(customProjects));
   }
   recompute();

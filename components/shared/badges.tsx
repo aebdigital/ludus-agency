@@ -6,8 +6,7 @@ import { programAccent } from "@/lib/data";
 const statusMap: Record<Status, { variant: Parameters<typeof Badge>[0]["variant"]; dot: string }> = {
   Aktívny: { variant: "success", dot: "var(--success)" },
   Konkurz: { variant: "default", dot: "var(--primary)" },
-  "Na voľne": { variant: "warning", dot: "var(--warning)" },
-  Absolvent: { variant: "secondary", dot: "var(--muted-foreground)" },
+  Neaktívny: { variant: "secondary", dot: "var(--muted-foreground)" },
 };
 
 export function StatusBadge({ status }: { status: Status }) {

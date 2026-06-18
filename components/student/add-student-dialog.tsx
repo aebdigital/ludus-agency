@@ -21,9 +21,7 @@ const empty = {
   lastName: "",
   gender: "Dievča",
   dateOfBirth: "",
-  city: "",
-  program: "Herectvo",
-  cohort: "1. ročník · Základy",
+  program: "Reklama",
   teacher: TEACHERS[0],
   status: "Aktívny",
   heightCm: "",
@@ -59,10 +57,10 @@ export function AddStudentDialog({
       gender: f.gender as Student["gender"],
       dateOfBirth: dob,
       age: computeAge(dob),
-      city: f.city.trim() || "—",
+      city: "—",
       status: f.status as Student["status"],
       program: f.program as Student["program"],
-      cohort: f.cohort.trim() || "—",
+      cohort: "—",
       teacher: f.teacher,
       enrolledOn: new Date().toISOString().slice(0, 10),
       heightCm: Number(f.heightCm) || 0,
@@ -118,22 +116,10 @@ export function AddStudentDialog({
           <Select value={f.gender} onChange={(e) => set("gender", e.target.value)}>
             <option>Dievča</option>
             <option>Chlapec</option>
-            <option>Iné</option>
           </Select>
         </Field>
         <Field label="Dátum narodenia">
           <Input type="date" value={f.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
-        </Field>
-
-        <Field label="Mesto">
-          <Input value={f.city} onChange={(e) => set("city", e.target.value)} placeholder="napr. Bratislava" />
-        </Field>
-        <Field label="Status">
-          <Select value={f.status} onChange={(e) => set("status", e.target.value)}>
-            {STATUSES.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </Select>
         </Field>
 
         <Field label="Program">
@@ -143,8 +129,12 @@ export function AddStudentDialog({
             ))}
           </Select>
         </Field>
-        <Field label="Ročník">
-          <Input value={f.cohort} onChange={(e) => set("cohort", e.target.value)} />
+        <Field label="Status">
+          <Select value={f.status} onChange={(e) => set("status", e.target.value)}>
+            {STATUSES.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </Select>
         </Field>
 
         <Field label="Pedagóg" className="sm:col-span-2">

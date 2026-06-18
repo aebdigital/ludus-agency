@@ -1,4 +1,4 @@
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, Construction } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -51,11 +51,15 @@ const team = [
 
 export default function SettingsPage() {
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <PageHeader
-        title="Nastavenia"
-        description="Spravujte profil štúdia, evidenčné polia a prístup tímu."
-      />
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none mx-auto max-w-5xl space-y-6 px-4 py-6 blur-[6px] select-none sm:px-6 lg:px-8"
+      >
+        <PageHeader
+          title="Nastavenia"
+          description="Spravujte profil štúdia, evidenčné polia a prístup tímu."
+        />
 
       <Card>
         <CardHeader>
@@ -132,6 +136,19 @@ export default function SettingsPage() {
           ))}
         </CardContent>
       </Card>
-    </div>
+      </div>
+
+      <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center px-4 lg:left-64">
+        <div className="pointer-events-auto max-w-sm rounded-2xl border border-border bg-card/95 px-8 py-7 text-center shadow-pop backdrop-blur">
+          <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+            <Construction className="size-6" />
+          </div>
+          <p className="text-base font-semibold tracking-tight">Nastavenia</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            V prípade potreby bude dokončené neskôr.
+          </p>
+        </div>
+      </div>
+    </>
   );
 }

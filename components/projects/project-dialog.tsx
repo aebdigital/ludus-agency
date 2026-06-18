@@ -1,0 +1,89 @@
+"use client";
+
+import { Star } from "lucide-react";
+import { Dialog } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { phaseVariant, type Project } from "@/lib/projects";
+import { useProjects, useStudents, updateProject } from "@/lib/store";
+import { cn } from "@/lib/utils";
+
+export function ProjectDialog({
+  project,
+  onClose,
+}: {
+  project: Project;
+  onClose: () => void;
+}) {
+  const students = useStudents();
+  // Pre vlastné projekty čítaj živú verziu zo store (aby sa hlavná postava prejavila hneď).
+  const live = useProjects().find((p) => p.id === project.id) ?? project;
+  const mainId = live.mainStudentId;
+
+  const cast = project.studentIds
+    .map((id) => students.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+
+  const setMain = (sid: string) => {
+    if (!project.custom) return;
+    const newMain = mainId === sid ? undefined : sid;
+    updateProject(project.id, {
+      mainStudentId: newMain,
+      phase: newMain ? "Vybratý" : "Konkurz",
+    });
+  };
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={project.title}
+      description={[project.program, project.dates !== "—" ? project.dates : null]
+        .filter(Boolean)
+        .join(" · ")}
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <Badge variant={phaseVariant[project.phase]}>{project.phase}</Badge>
+      </div>
+
+      {cast.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
+          V tomto projekte zatiaľ nie sú obsadení študenti.
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+            {cast.map((st) => {
+              const isMain = mainId === st.id;
+              return (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => setMain(st.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg border p-2.5 text-left transition-colors",
+                    isMain
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                      : "border-border hover:bg-secondary"
+                  )}
+                >
+                  <Avatar firstName={st.firstName} lastName={st.lastName} size="md" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {st.lastName} {st.firstName}
+                  </span>
+                  {isMain ? (
+                    <Badge variant="gold" className="gap-1">
+                      <Star className="size-3 fill-current" /> Vybratý
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      Označiť
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+        </div>
+      )}
+    </Dialog>
+  );
+}

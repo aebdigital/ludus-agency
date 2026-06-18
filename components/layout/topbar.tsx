@@ -17,7 +17,7 @@ export function Topbar() {
         >
           <Drama className="size-4" />
         </div>
-        <span className="font-semibold">Ludus</span>
+        <span className="font-semibold">Ludus Agency</span>
       </Link>
     </header>
   );

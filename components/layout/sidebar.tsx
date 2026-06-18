@@ -31,17 +31,13 @@ export function Sidebar() {
         </div>
         <div className="leading-tight">
           <div className="text-[15px] font-semibold tracking-tight text-white">
-            Ludus
+            Ludus Agency
           </div>
-          <div className="text-[11px] text-sidebar-muted">Divadelné štúdio</div>
         </div>
       </Link>
 
       {/* Navigácia */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-muted">
-          Pracovný priestor
-        </p>
         {nav.map((item) => {
           const active = isActive(item.href);
           return (
@@ -84,9 +80,6 @@ export function Sidebar() {
         <div className="min-w-0 leading-tight">
           <div className="truncate text-sm font-medium text-white">
             Katarína Baranová
-          </div>
-          <div className="truncate text-xs text-sidebar-muted">
-            Umelecká riaditeľka
           </div>
         </div>
       </div>

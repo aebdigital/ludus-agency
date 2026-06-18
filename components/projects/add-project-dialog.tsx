@@ -7,18 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
-import { PROGRAMS, TEACHERS } from "@/lib/data";
-import { PROJECT_PHASES, type Project } from "@/lib/projects";
+import { PROGRAMS } from "@/lib/data";
+import { type Project } from "@/lib/projects";
 import { addProject, nextProjectId, useStudents } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const empty = {
   title: "",
-  phase: "Konkurz",
   program: "Herectvo",
-  venue: "Hlavná scéna",
   dates: "",
-  director: TEACHERS[0],
 };
 
 export function AddProjectDialog({
@@ -56,11 +53,11 @@ export function AddProjectDialog({
     const project: Project = {
       id: nextProjectId(),
       title: f.title.trim(),
-      phase: f.phase as Project["phase"],
+      phase: "Konkurz",
       program: f.program,
-      venue: f.venue.trim() || "—",
+      venue: "—",
       dates: f.dates.trim() || "—",
-      director: f.director,
+      director: "—",
       studentIds: picked,
       custom: true,
     };
@@ -76,7 +73,6 @@ export function AddProjectDialog({
       open={open}
       onClose={onClose}
       title="Nový projekt"
-      description="Vytvorte projekt a obsaďte doň študentov. Uloží sa do prehliadača."
       footer={
         <>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -92,13 +88,6 @@ export function AddProjectDialog({
         <Field label="Názov *" className="sm:col-span-2">
           <Input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="napr. Vianočná revue" />
         </Field>
-        <Field label="Fáza">
-          <Select value={f.phase} onChange={(e) => set("phase", e.target.value)}>
-            {PROJECT_PHASES.map((p) => (
-              <option key={p}>{p}</option>
-            ))}
-          </Select>
-        </Field>
         <Field label="Program">
           <Select value={f.program} onChange={(e) => set("program", e.target.value)}>
             {PROGRAMS.map((p) => (
@@ -106,18 +95,8 @@ export function AddProjectDialog({
             ))}
           </Select>
         </Field>
-        <Field label="Miesto">
-          <Input value={f.venue} onChange={(e) => set("venue", e.target.value)} />
-        </Field>
         <Field label="Termín">
           <Input value={f.dates} onChange={(e) => set("dates", e.target.value)} placeholder="napr. 5. – 12. dec 2026" />
-        </Field>
-        <Field label="Réžia" className="sm:col-span-2">
-          <Select value={f.director} onChange={(e) => set("director", e.target.value)}>
-            {TEACHERS.map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </Select>
         </Field>
       </div>
 

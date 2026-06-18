@@ -9,11 +9,8 @@ import {
   Ruler,
   Eye,
   Palette,
-  Footprints,
   Shirt,
-  Mic2,
   Cake,
-  MapPin,
   CalendarDays,
   User,
   Phone,
@@ -24,7 +21,6 @@ import {
   FileText,
   Download,
   Plus,
-  Pencil,
   Weight,
   Quote,
   GraduationCap,
@@ -50,13 +46,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge, DocStatusBadge } from "@/components/shared/badges";
+import { DocStatusBadge } from "@/components/shared/badges";
 import { MediaTile } from "@/components/shared/media-tile";
 import { HonorareTab } from "@/components/student/honorare-tab";
-import { type StudentDocument } from "@/lib/data";
+import { EditableCard } from "@/components/student/editable-card";
+import { ProfileCard } from "@/components/student/profile-card";
+import {
+  TEACHERS,
+  EYE_COLORS,
+  HAIR_COLORS,
+  type StudentDocument,
+} from "@/lib/data";
 import { getExperience } from "@/lib/experience";
 import { useStudent, useStudentProjects } from "@/lib/store";
-import { formatDate, gradientFromSeed, initials } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 const kindIcon: Record<string, ComponentType<{ className?: string }>> = {
   "Súhlas rodiča": ShieldAlert,
@@ -66,6 +69,15 @@ const kindIcon: Record<string, ComponentType<{ className?: string }>> = {
   Vysvedčenie: GraduationCap,
   Štipendium: Sparkles,
 };
+
+/** Odvodí e-mail z mena typu "Urban Bednár · +421 …" → urban.bednar@email.sk */
+function emailFromName(raw: string): string {
+  const name = raw.split("·")[0].trim();
+  const ascii = name.normalize("NFD").replace(/[^\x00-\x7F]/g, "");
+  const parts = ascii.toLowerCase().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return "";
+  return `${parts[0]}.${parts[parts.length - 1]}@email.sk`;
+}
 
 function InfoRow({
   icon: Icon,
@@ -115,9 +127,7 @@ function DocSection({
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>Dokument</TableHead>
-                <TableHead className="hidden sm:table-cell">Typ</TableHead>
                 <TableHead className="hidden md:table-cell">Pridané</TableHead>
-                <TableHead className="hidden lg:table-cell">Kto</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -142,14 +152,8 @@ function DocSection({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">
-                      {d.kind}
-                    </TableCell>
                     <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground md:table-cell">
                       {formatDate(d.uploadedAt)}
-                    </TableCell>
-                    <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
-                      {d.addedBy}
                     </TableCell>
                     <TableCell>
                       <DocStatusBadge status={d.status} />
@@ -231,7 +235,10 @@ export default function StudentDetailPage() {
     ...getExperience(s.id).map((e) => ({ ...e, isProject: false })),
   ];
 
-  const { from, to } = gradientFromSeed(s.firstName + s.lastName);
+  const parentEmails = [
+    s.guardianEmail,
+    s.emergencyContact ? emailFromName(s.emergencyContact) : "",
+  ].filter(Boolean);
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
@@ -244,121 +251,86 @@ export default function StudentDetailPage() {
       </Link>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* ĽAVÝ stĺpec — veľká fotka + vždy viditeľné údaje */}
+        {/* ĽAVÝ stĺpec — fotka + vždy viditeľné údaje */}
         <div className="space-y-5">
-          <Card className="overflow-hidden">
-            <div
-              className="relative aspect-square w-full"
-              style={{
-                backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
-              }}
-            >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.28),transparent_60%)]" />
-              <span className="absolute inset-0 flex items-center justify-center text-7xl font-semibold text-white">
-                {initials(s.firstName, s.lastName)}
-              </span>
+          <ProfileCard student={s} />
+
+          <EditableCard
+            student={s}
+            title="Osobné údaje"
+            icon={User}
+            contentClassName="divide-y divide-border"
+            fields={[
+              { key: "dateOfBirth", label: "Dátum narodenia", type: "date" },
+              {
+                key: "gender",
+                label: "Pohlavie",
+                type: "select",
+                options: ["Dievča", "Chlapec"],
+              },
+              { key: "teacher", label: "Pedagóg", type: "select", options: TEACHERS },
+            ]}
+          >
+            <InfoRow
+              icon={Cake}
+              label="Dátum narodenia"
+              value={`${formatDate(s.dateOfBirth)} · ${s.age} r.`}
+            />
+            <InfoRow icon={User} label="Pohlavie" value={s.gender} />
+            <InfoRow icon={Presentation} label="Pedagóg" value={s.teacher} />
+            <InfoRow
+              icon={CalendarDays}
+              label="Zapísaný"
+              value={formatDate(s.enrolledOn)}
+            />
+          </EditableCard>
+
+          <EditableCard
+            student={s}
+            title="Kontakt"
+            icon={ShieldAlert}
+            contentClassName="space-y-3"
+            fields={[
+              { key: "phone", label: "Telefón dieťaťa", type: "text" },
+              { key: "email", label: "E-mail dieťaťa", type: "text" },
+            ]}
+          >
+            <div className="space-y-1.5">
+              <a
+                href={`tel:${s.phone ?? ""}`}
+                className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
+              >
+                <Phone className="size-4 text-muted-foreground" />
+                {s.phone || "—"}
+              </a>
+              <a
+                href={`mailto:${s.email ?? ""}`}
+                className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
+              >
+                <Mail className="size-4 text-muted-foreground" />
+                {s.email || "—"}
+              </a>
             </div>
-            <CardContent className="space-y-3 p-5">
-              <div>
-                <div className="flex flex-wrap items-baseline gap-x-2">
-                  <h1 className="text-xl font-semibold tracking-tight">
-                    {s.lastName} {s.firstName}
-                  </h1>
-                  {s.preferredName && (
-                    <span className="text-sm text-muted-foreground">
-                      „{s.preferredName}“
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2">
-                  <StatusBadge status={s.status} />
-                </div>
-                <div className="mt-3 flex flex-col gap-1.5 text-sm text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5">
-                    <GraduationCap className="size-4" /> {s.cohort}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <MapPin className="size-4" /> {s.city}
-                  </span>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <Button size="sm" variant="outline" className="flex-1 gap-1.5">
-                  <Pencil className="size-3.5" /> Upraviť
-                </Button>
-                <Button size="sm" className="flex-1 gap-1.5">
-                  <Plus className="size-3.5" /> Pridať súbor
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Osobné údaje — vždy viditeľné */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="size-4 text-primary" />
-                Osobné údaje
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y divide-border">
-              <InfoRow
-                icon={Cake}
-                label="Dátum narodenia"
-                value={`${formatDate(s.dateOfBirth)} · ${s.age} r.`}
-              />
-              <InfoRow icon={User} label="Pohlavie" value={s.gender} />
-              <InfoRow icon={User} label="Zámená" value={s.pronouns} />
-              <InfoRow icon={Presentation} label="Pedagóg" value={s.teacher} />
-              <InfoRow
-                icon={CalendarDays}
-                label="Zapísaný"
-                value={formatDate(s.enrolledOn)}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Rodič a núdzový kontakt — vždy viditeľné */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShieldAlert className="size-4 text-primary" />
-                Rodič a núdzový kontakt
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-sm font-medium">{s.guardianName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {s.guardianRelation}
+            {parentEmails.length > 0 && (
+              <div className="rounded-lg border border-border bg-secondary/50 p-2.5">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">
+                  Kontakt na rodičov
                 </p>
-              </div>
-              <div className="space-y-1.5">
-                <a
-                  href={`tel:${s.guardianPhone}`}
-                  className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
-                >
-                  <Phone className="size-4 text-muted-foreground" />
-                  {s.guardianPhone || "—"}
-                </a>
-                <a
-                  href={`mailto:${s.guardianEmail}`}
-                  className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
-                >
-                  <Mail className="size-4 text-muted-foreground" />
-                  {s.guardianEmail || "—"}
-                </a>
-              </div>
-              {s.emergencyContact && (
-                <div className="rounded-lg border border-border bg-secondary/50 p-2.5">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    Núdzový kontakt
-                  </p>
-                  <p className="text-sm">{s.emergencyContact}</p>
+                <div className="space-y-1">
+                  {parentEmails.map((em) => (
+                    <a
+                      key={em}
+                      href={`mailto:${em}`}
+                      className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
+                    >
+                      <Mail className="size-4 text-muted-foreground" />
+                      {em}
+                    </a>
+                  ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </EditableCard>
         </div>
 
         {/* PRAVÝ stĺpec — záložky */}
@@ -391,86 +363,105 @@ export default function StudentDetailPage() {
             {/* PREHĽAD */}
             <TabsContent value="overview">
               <div className="space-y-5">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Ruler className="size-4 text-primary" />
-                      Atribúty pre obsadenie
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-x-8 sm:grid-cols-3">
-                    <InfoRow icon={Ruler} label="Výška" value={`${s.heightCm} cm`} />
-                    <InfoRow icon={Weight} label="Hmotnosť" value={`${s.weightKg} kg`} />
-                    <InfoRow icon={Eye} label="Farba očí" value={s.eyeColor} />
-                    <InfoRow icon={Palette} label="Farba vlasov" value={s.hairColor} />
-                    <InfoRow icon={Footprints} label="Obuv (EU)" value={s.shoeEu} />
-                    <InfoRow icon={Shirt} label="Oblečenie" value={s.clothingSize} />
-                    {s.voiceType && (
-                      <InfoRow icon={Mic2} label="Typ hlasu" value={s.voiceType} />
-                    )}
-                  </CardContent>
-                </Card>
+                <EditableCard
+                  student={s}
+                  title="Atribúty pre obsadenie"
+                  icon={Ruler}
+                  contentClassName="grid grid-cols-2 gap-x-8 sm:grid-cols-3"
+                  fields={[
+                    { key: "heightCm", label: "Výška (cm)", type: "number" },
+                    { key: "weightKg", label: "Hmotnosť (kg)", type: "number" },
+                    {
+                      key: "eyeColor",
+                      label: "Farba očí",
+                      type: "select",
+                      options: EYE_COLORS,
+                    },
+                    {
+                      key: "hairColor",
+                      label: "Farba vlasov",
+                      type: "select",
+                      options: HAIR_COLORS,
+                    },
+                    {
+                      key: "clothingSize",
+                      label: "Oblečenie",
+                      type: "select",
+                      options: ["XS", "S", "M", "L", "XL"],
+                    },
+                  ]}
+                >
+                  <InfoRow icon={Ruler} label="Výška" value={`${s.heightCm} cm`} />
+                  <InfoRow icon={Weight} label="Hmotnosť" value={`${s.weightKg} kg`} />
+                  <InfoRow icon={Eye} label="Farba očí" value={s.eyeColor} />
+                  <InfoRow icon={Palette} label="Farba vlasov" value={s.hairColor} />
+                  <InfoRow icon={Shirt} label="Oblečenie" value={s.clothingSize} />
+                </EditableCard>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="size-4 text-primary" />
-                      Zručnosti a jazyky
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Zručnosti
-                      </p>
-                      {s.skills.length ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {s.skills.map((sk) => (
-                            <Badge key={sk} variant="default">
-                              {sk}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">—</p>
-                      )}
-                    </div>
-                    <div>
-                      <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        <Languages className="size-3.5" /> Jazyky
-                      </p>
+                <EditableCard
+                  student={s}
+                  title="Zručnosti a jazyky"
+                  icon={Sparkles}
+                  contentClassName="space-y-4"
+                  fields={[
+                    {
+                      key: "skills",
+                      label: "Zručnosti (oddelené čiarkou)",
+                      type: "list",
+                    },
+                    {
+                      key: "languages",
+                      label: "Jazyky (oddelené čiarkou)",
+                      type: "list",
+                    },
+                  ]}
+                >
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Zručnosti
+                    </p>
+                    {s.skills.length ? (
                       <div className="flex flex-wrap gap-1.5">
-                        {s.languages.map((l) => (
-                          <Badge key={l} variant="secondary">
-                            {l}
+                        {s.skills.map((sk) => (
+                          <Badge key={sk} variant="default">
+                            {sk}
                           </Badge>
                         ))}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Quote className="size-4 text-primary" />
-                      Profil a poznámka pedagóga
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm leading-relaxed text-foreground/90">
-                      {s.bio || "Zatiaľ bez popisu."}
-                    </p>
-                    {s.tutorNote && (
-                      <div className="rounded-lg border border-border bg-secondary/50 p-3">
-                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          Poznámka pedagóga
-                        </p>
-                        <p className="text-sm">{s.tutorNote}</p>
-                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">—</p>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div>
+                    <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <Languages className="size-3.5" /> Jazyky
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {s.languages.map((l) => (
+                        <Badge key={l} variant="secondary">
+                          {l}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </EditableCard>
+
+                <EditableCard
+                  student={s}
+                  title="Poznámka pedagóga"
+                  icon={Quote}
+                  fields={[
+                    {
+                      key: "tutorNote",
+                      label: "Poznámka pedagóga",
+                      type: "textarea",
+                    },
+                  ]}
+                >
+                  <p className="text-sm leading-relaxed text-foreground/90">
+                    {s.tutorNote || "Zatiaľ bez poznámky."}
+                  </p>
+                </EditableCard>
               </div>
             </TabsContent>
 
