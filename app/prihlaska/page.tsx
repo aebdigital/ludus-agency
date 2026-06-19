@@ -93,6 +93,9 @@ function Field({
 
 const grid = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3";
 
+import { addStudent, nextStudentId } from "@/lib/store";
+import type { Student } from "@/lib/data";
+
 export default function PrihlaskaPage() {
   const [submitted, setSubmitted] = useState(false);
   const [text, setText] = useState<Record<string, string>>({});
@@ -189,6 +192,83 @@ export default function PrihlaskaPage() {
         className="space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
+          const newStudent: Student = {
+            id: nextStudentId(),
+            firstName: text.firstName ?? "",
+            lastName: text.lastName ?? "",
+            preferredName: text.preferredName || undefined,
+            pronouns: text.gender === "Dievča" ? "ona" : "on",
+            gender: (text.gender as any) || "Iné",
+            dateOfBirth: text.dob ?? new Date().toISOString().split("T")[0],
+            age: 0,
+            city: text.city ?? "",
+            status: "Konkurz",
+            program: "Iné",
+            cohort: "Uchádzači",
+            teacher: "—",
+            enrolledOn: new Date().toISOString().split("T")[0],
+            heightCm: Number(text.height) || 0,
+            weightKg: Number(text.weight) || 0,
+            eyeColor: (text.eye as any) || "Hnedá",
+            hairColor: (text.hair as any) || "Hnedá",
+            shoeEu: Number(text.shoe) || 0,
+            clothingSize: (text.clothing as any) || "M",
+            voiceType: (text.voiceSing as any) || undefined,
+            school: text.school || "",
+            guardianEmail2: text.guardianEmail2 || "",
+            apparentAge: text.apparentAge || "",
+            ethnicity: text.ethnicity || "",
+            bodyType: text.body || "",
+            hairLength: text.hairLen || "",
+            hairType: text.hairType || "",
+            beard: text.beard || "",
+            suitSize: text.suit || "",
+            chestCircumference: Number(text.chest) || 0,
+            waistCircumference: Number(text.waist) || 0,
+            hipsCircumference: Number(text.hips) || 0,
+            headCircumference: Number(text.head) || 0,
+            neckCircumference: Number(text.neck) || 0,
+            voiceSpeak: text.voiceSpeak || "",
+            distinctiveFeatures: multi.znaky || [],
+            handicaps: text.handicaps || "",
+            skills: [
+              ...(text.otherSkills ? [text.otherSkills] : [])
+            ],
+            languages: multi.jazyky || [],
+            instruments: multi.nastroje || [],
+            danceStyles: multi.tanec || [],
+            sports: multi.sporty || [],
+            drivingLicences: multi.vodicak || [],
+            otherSkills: text.otherSkills || "",
+            otherTalents: text.otherTalents || "",
+            accent: text.accent || "",
+            igFollowers: Number(text.igFollowers) || 0,
+            ttFollowers: Number(text.ttFollowers) || 0,
+            ytFollowers: Number(text.ytFollowers) || 0,
+            fbFollowers: Number(text.fbFollowers) || 0,
+            urlWeb: text.urlWeb || "",
+            urlIg: text.urlIg || "",
+            urlTt: text.urlTt || "",
+            urlYt: text.urlYt || "",
+            urlFb: text.urlFb || "",
+            urlLi: text.urlLi || "",
+            urlImdb: text.urlImdb || "",
+            urlCsfd: text.urlCsfd || "",
+            urlIdiv: text.urlIdiv || "",
+            castingReadiness: 50,
+            phone: text.childPhone || "",
+            email: text.childEmail || "",
+            guardianName: text.guardianName ?? "",
+            guardianRelation: text.guardianRel ?? "Matka",
+            guardianPhone: text.guardianPhone ?? "",
+            guardianEmail: text.guardianEmail ?? "",
+            emergencyContact: "",
+            bio: "",
+            tutorNote: "",
+            documents: [],
+            media: []
+          };
+          addStudent(newStudent);
           setSubmitted(true);
           window.scrollTo({ top: 0 });
         }}

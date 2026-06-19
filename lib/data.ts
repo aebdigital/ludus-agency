@@ -86,6 +86,45 @@ export interface Student {
   // Prílohy
   documents: StudentDocument[];
   media: MediaItem[];
+
+  // Extended fields from application/registration form
+  school?: string;
+  guardianEmail2?: string;
+  apparentAge?: string;
+  ethnicity?: string;
+  bodyType?: string;
+  hairLength?: string;
+  hairType?: string;
+  beard?: string;
+  suitSize?: string;
+  chestCircumference?: number;
+  waistCircumference?: number;
+  hipsCircumference?: number;
+  headCircumference?: number;
+  neckCircumference?: number;
+  voiceSpeak?: string;
+  distinctiveFeatures?: string[];
+  handicaps?: string;
+  instruments?: string[];
+  danceStyles?: string[];
+  sports?: string[];
+  drivingLicences?: string[];
+  otherSkills?: string;
+  otherTalents?: string;
+  accent?: string;
+  igFollowers?: number;
+  ttFollowers?: number;
+  ytFollowers?: number;
+  fbFollowers?: number;
+  urlWeb?: string;
+  urlIg?: string;
+  urlTt?: string;
+  urlYt?: string;
+  urlFb?: string;
+  urlLi?: string;
+  urlImdb?: string;
+  urlCsfd?: string;
+  urlIdiv?: string;
 }
 
 function doc(

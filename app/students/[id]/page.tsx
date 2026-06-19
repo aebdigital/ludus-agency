@@ -28,6 +28,10 @@ import {
   Wallet,
   Briefcase,
   UserX,
+  Mic2,
+  Link2,
+  Users,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -219,6 +223,38 @@ function TutorNoteSection({ note }: { note: string }) {
   );
 }
 
+function TextareaSection({
+  note,
+  editKey,
+  placeholder,
+  fallback = "—",
+}: {
+  note: string;
+  editKey: string;
+  placeholder?: string;
+  fallback?: string;
+}) {
+  const ctx = useEditableCard();
+  const isEditing = ctx?.editing;
+
+  if (isEditing) {
+    return (
+      <InlineEditableField
+        keyName={editKey}
+        type="textarea"
+        placeholder={placeholder}
+        className="w-full text-sm"
+      />
+    );
+  }
+
+  return (
+    <p className="text-sm leading-relaxed text-foreground/90">
+      {note || fallback}
+    </p>
+  );
+}
+
 function DocSection({
   title,
   docs,
@@ -389,6 +425,7 @@ export default function StudentDetailPage() {
                 options: ["Dievča", "Chlapec"],
               },
               { key: "teacher", label: "Pedagóg", type: "select", options: TEACHERS },
+              { key: "school", label: "Umelecká škola", type: "text" },
             ]}
           >
             <InfoRow
@@ -415,6 +452,13 @@ export default function StudentDetailPage() {
               editOptions={TEACHERS}
             />
             <InfoRow
+              icon={GraduationCap}
+              label="Umelecká škola"
+              value={s.school || "—"}
+              editKey="school"
+              editType="text"
+            />
+            <InfoRow
               icon={CalendarDays}
               label="Zapísaný"
               value={formatDate(s.enrolledOn)}
@@ -425,47 +469,70 @@ export default function StudentDetailPage() {
             student={s}
             title="Kontakt"
             icon={ShieldAlert}
-            contentClassName="space-y-3"
+            contentClassName="space-y-4"
             fields={[
               { key: "phone", label: "Telefón dieťaťa", type: "text" },
               { key: "email", label: "E-mail dieťaťa", type: "text" },
+              { key: "guardianName", label: "Meno rodiča", type: "text" },
+              { key: "guardianRelation", label: "Vzťah k dieťaťu", type: "text" },
+              { key: "guardianPhone", label: "Telefón rodiča", type: "text" },
+              { key: "guardianEmail", label: "E-mail rodiča", type: "text" },
+              { key: "guardianEmail2", label: "E-mail druhého rodiča", type: "text" },
             ]}
           >
             <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Študent</p>
               <ContactRow
                 icon={Phone}
                 value={s.phone}
                 href={s.phone ? `tel:${s.phone}` : undefined}
                 editKey="phone"
-                label="Telefón"
+                label="Telefón dieťaťa"
               />
               <ContactRow
                 icon={Mail}
                 value={s.email}
                 href={s.email ? `mailto:${s.email}` : undefined}
                 editKey="email"
-                label="E-mail"
+                label="E-mail dieťaťa"
               />
             </div>
-            {parentEmails.length > 0 && (
-              <div className="rounded-lg border border-border bg-secondary/50 p-2.5">
-                <p className="mb-1 text-xs font-medium text-muted-foreground">
-                  Kontakt na rodičov
-                </p>
-                <div className="space-y-1">
-                  {parentEmails.map((em) => (
-                    <a
-                      key={em}
-                      href={`mailto:${em}`}
-                      className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
-                    >
-                      <Mail className="size-4 text-muted-foreground" />
-                      {em}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="space-y-2 border-t border-border pt-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rodič / zástupca</p>
+              <ContactRow
+                icon={User}
+                value={s.guardianName}
+                editKey="guardianName"
+                label="Meno rodiča"
+              />
+              <ContactRow
+                icon={Users}
+                value={s.guardianRelation}
+                editKey="guardianRelation"
+                label="Vzťah k dieťaťu"
+              />
+              <ContactRow
+                icon={Phone}
+                value={s.guardianPhone}
+                href={s.guardianPhone ? `tel:${s.guardianPhone}` : undefined}
+                editKey="guardianPhone"
+                label="Telefón rodiča"
+              />
+              <ContactRow
+                icon={Mail}
+                value={s.guardianEmail}
+                href={s.guardianEmail ? `mailto:${s.guardianEmail}` : undefined}
+                editKey="guardianEmail"
+                label="E-mail rodiča"
+              />
+              <ContactRow
+                icon={Mail}
+                value={s.guardianEmail2}
+                href={s.guardianEmail2 ? `mailto:${s.guardianEmail2}` : undefined}
+                editKey="guardianEmail2"
+                label="E-mail druhého rodiča"
+              />
+            </div>
           </EditableCard>
         </div>
 
@@ -525,6 +592,7 @@ export default function StudentDetailPage() {
                       type: "select",
                       options: ["XS", "S", "M", "L", "XL"],
                     },
+                    { key: "shoeEu", label: "Veľkosť obuvi (EU)", type: "number" },
                   ]}
                 >
                   <InfoRow icon={Ruler} label="Výška" value={`${s.heightCm} cm`} editKey="heightCm" editType="number" />
@@ -532,6 +600,51 @@ export default function StudentDetailPage() {
                   <InfoRow icon={Eye} label="Farba očí" value={s.eyeColor} editKey="eyeColor" editType="select" editOptions={EYE_COLORS} />
                   <InfoRow icon={Palette} label="Farba vlasov" value={s.hairColor} editKey="hairColor" editType="select" editOptions={HAIR_COLORS} />
                   <InfoRow icon={Shirt} label="Oblečenie" value={s.clothingSize} editKey="clothingSize" editType="select" editOptions={["XS", "S", "M", "L", "XL"]} />
+                  <InfoRow icon={Ruler} label="Obuv (EU)" value={s.shoeEu || "—"} editKey="shoeEu" editType="number" />
+                </EditableCard>
+
+                <EditableCard
+                  student={s}
+                  title="Rozšírený vzhľad"
+                  icon={Eye}
+                  contentClassName="grid grid-cols-2 gap-x-8 sm:grid-cols-3"
+                  fields={[
+                    { key: "apparentAge", label: "Vekový vzhľad", type: "text" },
+                    { key: "ethnicity", label: "Etnický vzhľad", type: "text" },
+                    { key: "bodyType", label: "Typ postavy", type: "text" },
+                    { key: "hairLength", label: "Dĺžka vlasov", type: "text" },
+                    { key: "hairType", label: "Typ vlasov", type: "text" },
+                    { key: "beard", label: "Brada / fúzy", type: "text" },
+                  ]}
+                >
+                  <InfoRow icon={User} label="Vekový vzhľad" value={s.apparentAge || "—"} editKey="apparentAge" editType="text" />
+                  <InfoRow icon={User} label="Etnický vzhľad" value={s.ethnicity || "—"} editKey="ethnicity" editType="text" />
+                  <InfoRow icon={User} label="Typ postavy" value={s.bodyType || "—"} editKey="bodyType" editType="text" />
+                  <InfoRow icon={Palette} label="Dĺžka vlasov" value={s.hairLength || "—"} editKey="hairLength" editType="text" />
+                  <InfoRow icon={Palette} label="Typ vlasov" value={s.hairType || "—"} editKey="hairType" editType="text" />
+                  <InfoRow icon={User} label="Brada / fúzy" value={s.beard || "—"} editKey="beard" editType="text" />
+                </EditableCard>
+
+                <EditableCard
+                  student={s}
+                  title="Telesné miery"
+                  icon={Ruler}
+                  contentClassName="grid grid-cols-2 gap-x-8 sm:grid-cols-3"
+                  fields={[
+                    { key: "suitSize", label: "Veľkosť obleku / kostýmu", type: "text" },
+                    { key: "chestCircumference", label: "Obvod hrudníka (cm)", type: "number" },
+                    { key: "waistCircumference", label: "Obvod pása (cm)", type: "number" },
+                    { key: "hipsCircumference", label: "Obvod bokov (cm)", type: "number" },
+                    { key: "headCircumference", label: "Obvod hlavy (cm)", type: "number" },
+                    { key: "neckCircumference", label: "Obvod krku (cm)", type: "number" },
+                  ]}
+                >
+                  <InfoRow icon={Shirt} label="Oblek/kostým" value={s.suitSize || "—"} editKey="suitSize" editType="text" />
+                  <InfoRow icon={Ruler} label="Obvod hrudníka" value={s.chestCircumference ? `${s.chestCircumference} cm` : "—"} editKey="chestCircumference" editType="number" />
+                  <InfoRow icon={Ruler} label="Obvod pása" value={s.waistCircumference ? `${s.waistCircumference} cm` : "—"} editKey="waistCircumference" editType="number" />
+                  <InfoRow icon={Ruler} label="Obvod bokov" value={s.hipsCircumference ? `${s.hipsCircumference} cm` : "—"} editKey="hipsCircumference" editType="number" />
+                  <InfoRow icon={Ruler} label="Obvod hlavy" value={s.headCircumference ? `${s.headCircumference} cm` : "—"} editKey="headCircumference" editType="number" />
+                  <InfoRow icon={Ruler} label="Obvod krku" value={s.neckCircumference ? `${s.neckCircumference} cm` : "—"} editKey="neckCircumference" editType="number" />
                 </EditableCard>
 
                 <EditableCard
@@ -571,6 +684,101 @@ export default function StudentDetailPage() {
                       editKey="languages"
                       placeholder="Jazyky oddelené čiarkou"
                     />
+                  </div>
+                </EditableCard>
+
+                <EditableCard
+                  student={s}
+                  title="Rozšírené zručnosti a charakteristiky"
+                  icon={Sparkles}
+                  contentClassName="space-y-4"
+                  fields={[
+                    { key: "instruments", label: "Hudobné nástroje (čiarkou)", type: "list" },
+                    { key: "danceStyles", label: "Tanec (čiarkou)", type: "list" },
+                    { key: "sports", label: "Športy (čiarkou)", type: "list" },
+                    { key: "drivingLicences", label: "Vodičské preukazy (čiarkou)", type: "list" },
+                    { key: "distinctiveFeatures", label: "Unikátne znaky (čiarkou)", type: "list" },
+                    { key: "otherSkills", label: "Iné zručnosti", type: "text" },
+                    { key: "otherTalents", label: "Iné talenty", type: "text" },
+                    { key: "accent", label: "Akcent", type: "text" },
+                    { key: "voiceSpeak", label: "Výška hlasu (reč)", type: "text" },
+                    { key: "handicaps", label: "Hendikepy / iné", type: "textarea" },
+                  ]}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Hudobné nástroje</p>
+                      <SkillsList skills={s.instruments || []} editKey="instruments" placeholder="Nástroje oddelené čiarkou" />
+                    </div>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Tanec</p>
+                      <SkillsList skills={s.danceStyles || []} editKey="danceStyles" placeholder="Tance oddelené čiarkou" />
+                    </div>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Športy a bojové umenia</p>
+                      <SkillsList skills={s.sports || []} editKey="sports" placeholder="Športy oddelené čiarkou" />
+                    </div>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Vodičské oprávnenia</p>
+                      <SkillsList skills={s.drivingLicences || []} editKey="drivingLicences" placeholder="Vodičáky oddelené čiarkou" />
+                    </div>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Unikátne znaky</p>
+                      <SkillsList skills={s.distinctiveFeatures || []} editKey="distinctiveFeatures" placeholder="Znaky oddelené čiarkou" />
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-border pt-4 grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-8">
+                    <InfoRow icon={Sparkles} label="Iné zručnosti" value={s.otherSkills || "—"} editKey="otherSkills" editType="text" />
+                    <InfoRow icon={Sparkles} label="Iné talenty" value={s.otherTalents || "—"} editKey="otherTalents" editType="text" />
+                    <InfoRow icon={Languages} label="Akcent" value={s.accent || "—"} editKey="accent" editType="text" />
+                    <InfoRow icon={Mic2} label="Hlas (reč)" value={s.voiceSpeak || "—"} editKey="voiceSpeak" editType="text" />
+                  </div>
+                  
+                  <div className="border-t border-border pt-4">
+                    <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Hendikepy a iné obmedzenia</p>
+                    <TextareaSection note={s.handicaps || ""} editKey="handicaps" placeholder="Popíšte prípadné hendikepy..." fallback="Bez obmedzení." />
+                  </div>
+                </EditableCard>
+
+                <EditableCard
+                  student={s}
+                  title="Sociálne siete a web"
+                  icon={Share2}
+                  contentClassName="space-y-4"
+                  fields={[
+                    { key: "igFollowers", label: "Instagram (sledovatelia)", type: "number" },
+                    { key: "ttFollowers", label: "TikTok (sledovatelia)", type: "number" },
+                    { key: "ytFollowers", label: "YouTube (sledovatelia)", type: "number" },
+                    { key: "fbFollowers", label: "Facebook (sledovatelia)", type: "number" },
+                    { key: "urlWeb", label: "Web URL", type: "text" },
+                    { key: "urlIg", label: "Instagram URL", type: "text" },
+                    { key: "urlTt", label: "TikTok URL", type: "text" },
+                    { key: "urlYt", label: "YouTube URL", type: "text" },
+                    { key: "urlFb", label: "Facebook URL", type: "text" },
+                    { key: "urlLi", label: "LinkedIn URL", type: "text" },
+                    { key: "urlImdb", label: "IMDB URL", type: "text" },
+                    { key: "urlCsfd", label: "ČSFD URL", type: "text" },
+                    { key: "urlIdiv", label: "iDivadlo URL", type: "text" },
+                  ]}
+                >
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-8 sm:grid-cols-4">
+                    <InfoRow icon={Share2} label="Instagram (sleď.)" value={s.igFollowers || 0} editKey="igFollowers" editType="number" />
+                    <InfoRow icon={Share2} label="TikTok (sleď.)" value={s.ttFollowers || 0} editKey="ttFollowers" editType="number" />
+                    <InfoRow icon={Share2} label="YouTube (sleď.)" value={s.ytFollowers || 0} editKey="ytFollowers" editType="number" />
+                    <InfoRow icon={Share2} label="Facebook (sleď.)" value={s.fbFollowers || 0} editKey="fbFollowers" editType="number" />
+                  </div>
+                  
+                  <div className="border-t border-border pt-4 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8">
+                    <ContactRow icon={Link2} label="Web" value={s.urlWeb} href={s.urlWeb} editKey="urlWeb" />
+                    <ContactRow icon={Link2} label="Instagram" value={s.urlIg} href={s.urlIg} editKey="urlIg" />
+                    <ContactRow icon={Link2} label="TikTok" value={s.urlTt} href={s.urlTt} editKey="urlTt" />
+                    <ContactRow icon={Link2} label="YouTube" value={s.urlYt} href={s.urlYt} editKey="urlYt" />
+                    <ContactRow icon={Link2} label="Facebook" value={s.urlFb} href={s.urlFb} editKey="urlFb" />
+                    <ContactRow icon={Link2} label="LinkedIn" value={s.urlLi} href={s.urlLi} editKey="urlLi" />
+                    <ContactRow icon={Link2} label="IMDB" value={s.urlImdb} href={s.urlImdb} editKey="urlImdb" />
+                    <ContactRow icon={Link2} label="ČSFD" value={s.urlCsfd} href={s.urlCsfd} editKey="urlCsfd" />
+                    <ContactRow icon={Link2} label="iDivadlo" value={s.urlIdiv} href={s.urlIdiv} editKey="urlIdiv" />
                   </div>
                 </EditableCard>
 
