@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Wallet, Plus, Check, Coins } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Wallet, Plus, Check, Coins, Pencil } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,8 +10,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getFees, nextMonthLabel, type Fee } from "@/lib/honorare";
+import { useStudentProjects } from "@/lib/store";
 
 function cloneFees(fees: Fee[]): Fee[] {
   return fees.map((f) => ({
@@ -53,7 +56,73 @@ function StatusBadge({ paid }: { paid: boolean }) {
 }
 
 export function HonorareTab({ studentId }: { studentId: string }) {
-  const [fees, setFees] = useState<Fee[]>(() => cloneFees(getFees(studentId)));
+  const assignedProjects = useStudentProjects(studentId);
+
+  const [fees, setFees] = useState<Fee[]>(() => {
+    const baseFees = cloneFees(getFees(studentId));
+    const missing = assignedProjects.filter(
+      (p) => !baseFees.some((f) => f.project === p.title)
+    );
+    const extra = missing.map((p) => ({
+      id: p.id,
+      project: p.title,
+      type: "Jednorazový" as const,
+      amount: 150,
+      paid: false,
+    }));
+    return [...baseFees, ...extra];
+  });
+
+  useEffect(() => {
+    setFees((currentFees) => {
+      const missing = assignedProjects.filter(
+        (p) => !currentFees.some((f) => f.project === p.title)
+      );
+      if (missing.length === 0) return currentFees;
+
+      const extra = missing.map((p) => ({
+        id: p.id,
+        project: p.title,
+        type: "Jednorazový" as const,
+        amount: 150,
+        paid: false,
+      }));
+      return [...currentFees, ...extra];
+    });
+  }, [assignedProjects]);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editType, setEditType] = useState<"Jednorazový" | "Mesačný">("Jednorazový");
+
+  const startEdit = (f: Fee) => {
+    setEditingId(f.id);
+    setEditAmount(f.amount);
+    setEditType(f.type);
+  };
+
+  const saveEdit = (feeId: string) => {
+    setFees((prev) =>
+      prev.map((f) => {
+        if (f.id !== feeId) return f;
+        let months = f.months;
+        if (editType === "Mesačný" && (!months || months.length === 0)) {
+          months = [{ label: "jan '26", paid: false }];
+        }
+        return {
+          ...f,
+          amount: editAmount,
+          type: editType,
+          months: editType === "Mesačný" ? months : undefined,
+        };
+      })
+    );
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
 
   const toggleOneTime = (feeId: string) =>
     setFees((prev) =>
@@ -145,74 +214,134 @@ export function HonorareTab({ studentId }: { studentId: string }) {
       </div>
 
       {/* Honoráre podľa projektov */}
-      {fees.map((f) => (
-        <Card key={f.id} className="overflow-hidden">
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Coins className="size-4" />
-              </span>
-              <div>
-                <CardTitle className="text-[15px]">{f.project}</CardTitle>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {f.type === "Mesačný"
-                    ? `${f.amount} € / mesiac`
-                    : `${f.amount} € jednorazovo`}
-                </p>
-              </div>
-            </div>
-            <Badge variant={f.type === "Mesačný" ? "default" : "gold"}>
-              {f.type}
-            </Badge>
-          </CardHeader>
+      {fees.map((f) => {
+        const isEditing = f.id === editingId;
 
-          <CardContent className="pt-0">
-            {f.type === "Jednorazový" ? (
-              <div className="flex w-full items-center gap-3 rounded-lg border border-border p-3">
-                <PaidCheckbox paid={!!f.paid} onClick={() => toggleOneTime(f.id)} />
-                <span className="flex-1 text-sm font-medium">
-                  Jednorazová platba
-                </span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {f.amount} €
-                </span>
-                <StatusBadge paid={!!f.paid} />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="divide-y divide-border rounded-lg border border-border">
-                  {f.months?.map((mm, i) => (
-                    <div
-                      key={mm.label + i}
-                      className="flex items-center gap-3 p-3"
-                    >
-                      <PaidCheckbox
-                        paid={mm.paid}
-                        onClick={() => toggleMonth(f.id, i)}
+        return (
+          <Card key={f.id} className="overflow-hidden">
+            <CardHeader className="flex-row items-center justify-between gap-3">
+              {isEditing ? (
+                <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary animate-pulse">
+                      <Coins className="size-4" />
+                    </span>
+                    <CardTitle className="text-[15px]">{f.project}</CardTitle>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(Number(e.target.value) || 0)}
+                        className="h-8 w-20 text-right py-0.5 px-2 text-sm"
                       />
-                      <span className="flex-1 text-sm font-medium capitalize">
-                        {mm.label}
-                      </span>
-                      <span className="text-sm tabular-nums text-muted-foreground">
-                        {f.amount} €
-                      </span>
-                      <StatusBadge paid={mm.paid} />
+                      <span className="text-sm font-medium text-muted-foreground">€</span>
                     </div>
-                  ))}
+
+                    <Select
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value as "Jednorazový" | "Mesačný")}
+                      className="h-8 py-0 px-2 text-xs w-28"
+                    >
+                      <option value="Jednorazový">Jednorazový</option>
+                      <option value="Mesačný">Mesačný</option>
+                    </Select>
+
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <Button size="sm" className="h-8 px-3" onClick={() => saveEdit(f.id)}>
+                        Uložiť
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 px-2" onClick={cancelEdit}>
+                        Zrušiť
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addMonth(f.id)}
-                  className="w-full border-dashed"
-                >
-                  <Plus className="size-4" /> Pridať mesiac
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Coins className="size-4" />
+                    </span>
+                    <div>
+                      <CardTitle className="text-[15px]">{f.project}</CardTitle>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {f.type === "Mesačný"
+                          ? `${f.amount} € / mesiac`
+                          : `${f.amount} € jednorazovo`}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant={f.type === "Mesačný" ? "default" : "gold"}>
+                      {f.type}
+                    </Badge>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      onClick={() => startEdit(f)}
+                      aria-label="Upraviť honorár"
+                    >
+                      <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardHeader>
+
+            {!isEditing && (
+              <CardContent className="pt-0">
+                {f.type === "Jednorazový" ? (
+                  <div className="flex w-full items-center gap-3 rounded-lg border border-border p-3">
+                    <PaidCheckbox paid={!!f.paid} onClick={() => toggleOneTime(f.id)} />
+                    <span className="flex-1 text-sm font-medium">
+                      Jednorazová platba
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {f.amount} €
+                    </span>
+                    <StatusBadge paid={!!f.paid} />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="divide-y divide-border rounded-lg border border-border">
+                      {f.months?.map((mm, i) => (
+                        <div
+                          key={mm.label + i}
+                          className="flex items-center gap-3 p-3"
+                        >
+                          <PaidCheckbox
+                            paid={mm.paid}
+                            onClick={() => toggleMonth(f.id, i)}
+                          />
+                          <span className="flex-1 text-sm font-medium capitalize">
+                            {mm.label}
+                          </span>
+                          <span className="text-sm tabular-nums text-muted-foreground">
+                            {f.amount} €
+                          </span>
+                          <StatusBadge paid={mm.paid} />
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addMonth(f.id)}
+                      className="w-full border-dashed"
+                    >
+                      <Plus className="size-4" /> Pridať mesiac
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
             )}
-          </CardContent>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 }

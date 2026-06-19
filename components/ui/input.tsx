@@ -1,18 +1,35 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "./date-picker";
 
 const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, type, ...props }, ref) => (
-    <input
-      type={type}
-      ref={ref}
-      className={cn(
-        "flex h-9 w-full rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      {...props}
-    />
-  )
+  ({ className, type, ...props }, ref) => {
+    if (type === "date") {
+      return (
+        <DatePicker
+          ref={ref}
+          value={props.value as string}
+          onChange={props.onChange as any}
+          className={className}
+          placeholder={props.placeholder}
+          disabled={props.disabled}
+          name={props.name}
+        />
+      );
+    }
+
+    return (
+      <input
+        type={type}
+        ref={ref}
+        className={cn(
+          "flex h-9 w-full rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
 Input.displayName = "Input";
 

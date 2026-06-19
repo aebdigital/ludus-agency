@@ -49,7 +49,7 @@ import {
 import { DocStatusBadge } from "@/components/shared/badges";
 import { MediaTile } from "@/components/shared/media-tile";
 import { HonorareTab } from "@/components/student/honorare-tab";
-import { EditableCard } from "@/components/student/editable-card";
+import { EditableCard, InlineEditableField, useEditableCard } from "@/components/student/editable-card";
 import { ProfileCard } from "@/components/student/profile-card";
 import {
   TEACHERS,
@@ -83,19 +83,139 @@ function InfoRow({
   icon: Icon,
   label,
   value,
+  editKey,
+  editType = "text",
+  editOptions,
 }: {
   icon: ComponentType<{ className?: string }>;
   label: string;
   value: ReactNode;
+  editKey?: string;
+  editType?: "text" | "number" | "date" | "select";
+  editOptions?: readonly string[];
 }) {
+  const ctx = useEditableCard();
+  const isEditing = ctx?.editing && editKey;
+
   return (
     <div className="flex items-center justify-between gap-4 py-2.5">
-      <span className="flex items-center gap-2 text-sm text-muted-foreground">
+      <span className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
         <Icon className="size-4" />
         {label}
       </span>
-      <span className="text-sm font-medium">{value}</span>
+      {isEditing ? (
+        <div className="flex-1 max-w-[200px] flex justify-end">
+          <InlineEditableField
+            keyName={editKey}
+            type={editType}
+            options={editOptions}
+            className="w-full text-right h-8"
+          />
+        </div>
+      ) : (
+        <span className="text-sm font-medium">{value}</span>
+      )}
     </div>
+  );
+}
+
+function ContactRow({
+  icon: Icon,
+  value,
+  href,
+  editKey,
+  label,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  value: string | undefined | null;
+  href?: string;
+  editKey: string;
+  label: string;
+}) {
+  const ctx = useEditableCard();
+  const isEditing = ctx?.editing;
+
+  return (
+    <div className="flex items-center gap-2 py-0.5">
+      <Icon className="size-4 text-muted-foreground shrink-0" />
+      {isEditing ? (
+        <div className="flex-1">
+          <span className="sr-only">{label}</span>
+          <InlineEditableField
+            keyName={editKey}
+            type="text"
+            placeholder={label}
+            className="h-8 text-left text-sm w-full"
+          />
+        </div>
+      ) : href ? (
+        <a href={href} className="text-sm text-foreground/90 hover:text-primary truncate">
+          {value || "—"}
+        </a>
+      ) : (
+        <span className="text-sm text-foreground/90 truncate">{value || "—"}</span>
+      )}
+    </div>
+  );
+}
+
+function SkillsList({
+  skills,
+  editKey,
+  placeholder,
+}: {
+  skills: string[];
+  editKey: string;
+  placeholder?: string;
+}) {
+  const ctx = useEditableCard();
+  const isEditing = ctx?.editing;
+
+  if (isEditing) {
+    return (
+      <InlineEditableField
+        keyName={editKey}
+        type="text"
+        placeholder={placeholder}
+        className="w-full h-8 text-sm"
+      />
+    );
+  }
+
+  if (!skills.length) {
+    return <p className="text-sm text-muted-foreground">—</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {skills.map((sk) => (
+        <Badge key={sk} variant={editKey === "skills" ? "default" : "secondary"}>
+          {sk}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
+function TutorNoteSection({ note }: { note: string }) {
+  const ctx = useEditableCard();
+  const isEditing = ctx?.editing;
+
+  if (isEditing) {
+    return (
+      <InlineEditableField
+        keyName="tutorNote"
+        type="textarea"
+        placeholder="Napíšte poznámku..."
+        className="w-full text-sm"
+      />
+    );
+  }
+
+  return (
+    <p className="text-sm leading-relaxed text-foreground/90">
+      {note || "Zatiaľ bez poznámky."}
+    </p>
   );
 }
 
@@ -275,9 +395,25 @@ export default function StudentDetailPage() {
               icon={Cake}
               label="Dátum narodenia"
               value={`${formatDate(s.dateOfBirth)} · ${s.age} r.`}
+              editKey="dateOfBirth"
+              editType="date"
             />
-            <InfoRow icon={User} label="Pohlavie" value={s.gender} />
-            <InfoRow icon={Presentation} label="Pedagóg" value={s.teacher} />
+            <InfoRow
+              icon={User}
+              label="Pohlavie"
+              value={s.gender}
+              editKey="gender"
+              editType="select"
+              editOptions={["Dievča", "Chlapec"]}
+            />
+            <InfoRow
+              icon={Presentation}
+              label="Pedagóg"
+              value={s.teacher}
+              editKey="teacher"
+              editType="select"
+              editOptions={TEACHERS}
+            />
             <InfoRow
               icon={CalendarDays}
               label="Zapísaný"
@@ -295,21 +431,21 @@ export default function StudentDetailPage() {
               { key: "email", label: "E-mail dieťaťa", type: "text" },
             ]}
           >
-            <div className="space-y-1.5">
-              <a
-                href={`tel:${s.phone ?? ""}`}
-                className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
-              >
-                <Phone className="size-4 text-muted-foreground" />
-                {s.phone || "—"}
-              </a>
-              <a
-                href={`mailto:${s.email ?? ""}`}
-                className="flex items-center gap-2 text-sm text-foreground/90 hover:text-primary"
-              >
-                <Mail className="size-4 text-muted-foreground" />
-                {s.email || "—"}
-              </a>
+            <div className="space-y-2">
+              <ContactRow
+                icon={Phone}
+                value={s.phone}
+                href={s.phone ? `tel:${s.phone}` : undefined}
+                editKey="phone"
+                label="Telefón"
+              />
+              <ContactRow
+                icon={Mail}
+                value={s.email}
+                href={s.email ? `mailto:${s.email}` : undefined}
+                editKey="email"
+                label="E-mail"
+              />
             </div>
             {parentEmails.length > 0 && (
               <div className="rounded-lg border border-border bg-secondary/50 p-2.5">
@@ -391,11 +527,11 @@ export default function StudentDetailPage() {
                     },
                   ]}
                 >
-                  <InfoRow icon={Ruler} label="Výška" value={`${s.heightCm} cm`} />
-                  <InfoRow icon={Weight} label="Hmotnosť" value={`${s.weightKg} kg`} />
-                  <InfoRow icon={Eye} label="Farba očí" value={s.eyeColor} />
-                  <InfoRow icon={Palette} label="Farba vlasov" value={s.hairColor} />
-                  <InfoRow icon={Shirt} label="Oblečenie" value={s.clothingSize} />
+                  <InfoRow icon={Ruler} label="Výška" value={`${s.heightCm} cm`} editKey="heightCm" editType="number" />
+                  <InfoRow icon={Weight} label="Hmotnosť" value={`${s.weightKg} kg`} editKey="weightKg" editType="number" />
+                  <InfoRow icon={Eye} label="Farba očí" value={s.eyeColor} editKey="eyeColor" editType="select" editOptions={EYE_COLORS} />
+                  <InfoRow icon={Palette} label="Farba vlasov" value={s.hairColor} editKey="hairColor" editType="select" editOptions={HAIR_COLORS} />
+                  <InfoRow icon={Shirt} label="Oblečenie" value={s.clothingSize} editKey="clothingSize" editType="select" editOptions={["XS", "S", "M", "L", "XL"]} />
                 </EditableCard>
 
                 <EditableCard
@@ -420,29 +556,21 @@ export default function StudentDetailPage() {
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Zručnosti
                     </p>
-                    {s.skills.length ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {s.skills.map((sk) => (
-                          <Badge key={sk} variant="default">
-                            {sk}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">—</p>
-                    )}
+                    <SkillsList
+                      skills={s.skills}
+                      editKey="skills"
+                      placeholder="Zručnosti oddelené čiarkou"
+                    />
                   </div>
                   <div>
                     <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       <Languages className="size-3.5" /> Jazyky
                     </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {s.languages.map((l) => (
-                        <Badge key={l} variant="secondary">
-                          {l}
-                        </Badge>
-                      ))}
-                    </div>
+                    <SkillsList
+                      skills={s.languages}
+                      editKey="languages"
+                      placeholder="Jazyky oddelené čiarkou"
+                    />
                   </div>
                 </EditableCard>
 
@@ -458,9 +586,7 @@ export default function StudentDetailPage() {
                     },
                   ]}
                 >
-                  <p className="text-sm leading-relaxed text-foreground/90">
-                    {s.tutorNote || "Zatiaľ bez poznámky."}
-                  </p>
+                  <TutorNoteSection note={s.tutorNote || ""} />
                 </EditableCard>
               </div>
             </TabsContent>

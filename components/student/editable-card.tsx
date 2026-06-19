@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
-import { useState } from "react";
+import { useState, createContext, useContext } from "react";
 import { Pencil } from "lucide-react";
 import {
   Card,
@@ -23,6 +23,79 @@ export type EditField = {
   type?: "text" | "number" | "date" | "select" | "textarea" | "list";
   options?: readonly string[];
 };
+
+export type EditableCardContextType = {
+  editing: boolean;
+  draft: Record<string, string>;
+  update: (key: string, value: string) => void;
+};
+
+export const EditableCardContext = createContext<EditableCardContextType | null>(null);
+
+export function useEditableCard() {
+  return useContext(EditableCardContext);
+}
+
+export function InlineEditableField({
+  keyName,
+  type = "text",
+  options,
+  className,
+  placeholder,
+}: {
+  keyName: string;
+  type?: "text" | "number" | "date" | "select" | "textarea" | "list";
+  options?: readonly string[];
+  className?: string;
+  placeholder?: string;
+}) {
+  const ctx = useEditableCard();
+  if (!ctx || !ctx.editing) return null;
+
+  const { draft, update } = ctx;
+  const val = draft[keyName] ?? "";
+
+  if (type === "select") {
+    return (
+      <Select
+        value={val}
+        onChange={(e) => update(keyName, e.target.value)}
+        className={cn("h-8 py-0.5 text-xs", className)}
+      >
+        {options?.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </Select>
+    );
+  }
+
+  if (type === "textarea") {
+    return (
+      <textarea
+        value={val}
+        onChange={(e) => update(keyName, e.target.value)}
+        placeholder={placeholder}
+        rows={4}
+        className={cn(
+          "w-full resize-y rounded-md border border-input bg-card px-3 py-2 text-sm leading-relaxed shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-focus",
+          className
+        )}
+      />
+    );
+  }
+
+  return (
+    <Input
+      type={type === "number" ? "number" : type === "date" ? "date" : "text"}
+      value={val}
+      onChange={(e) => update(keyName, e.target.value)}
+      placeholder={placeholder}
+      className={cn("h-8 py-0.5 px-2 text-sm", className)}
+    />
+  );
+}
 
 export function EditableCard({
   student,
@@ -79,64 +152,30 @@ export function EditableCard({
     setDraft((d) => ({ ...d, [key]: value }));
 
   return (
-    <Card className="group relative">
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          {Icon && <Icon className="size-4 text-primary" />}
-          {title}
-        </CardTitle>
-      </CardHeader>
+    <EditableCardContext.Provider value={{ editing, draft, update }}>
+      <Card className="group relative">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            {Icon && <Icon className="size-4 text-primary" />}
+            {title}
+          </CardTitle>
+        </CardHeader>
 
-      {!editing && (
-        <button
-          onClick={start}
-          aria-label="Upraviť"
-          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-        >
-          <Pencil className="size-3.5" />
-        </button>
-      )}
+        {!editing && (
+          <button
+            onClick={start}
+            aria-label="Upraviť"
+            className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-secondary hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        )}
 
-      <CardContent className={editing ? undefined : contentClassName}>
-        {editing ? (
-          <div className="space-y-3">
-            {fields.map((f) => (
-              <label key={String(f.key)} className="block">
-                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                  {f.label}
-                </span>
-                {f.type === "select" ? (
-                  <Select
-                    value={draft[f.key as string] ?? ""}
-                    onChange={(e) => update(f.key as string, e.target.value)}
-                  >
-                    {f.options?.map((o) => (
-                      <option key={o}>{o}</option>
-                    ))}
-                  </Select>
-                ) : f.type === "textarea" ? (
-                  <textarea
-                    value={draft[f.key as string] ?? ""}
-                    onChange={(e) => update(f.key as string, e.target.value)}
-                    rows={4}
-                    className="w-full resize-y rounded-md border border-input bg-card px-3 py-2 text-sm leading-relaxed shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-focus"
-                  />
-                ) : (
-                  <Input
-                    type={
-                      f.type === "number"
-                        ? "number"
-                        : f.type === "date"
-                          ? "date"
-                          : "text"
-                    }
-                    value={draft[f.key as string] ?? ""}
-                    onChange={(e) => update(f.key as string, e.target.value)}
-                  />
-                )}
-              </label>
-            ))}
-            <div className={cn("flex items-center gap-2 pt-1")}>
+        <CardContent className={contentClassName}>
+          {children}
+
+          {editing && (
+            <div className="mt-4 flex items-center gap-2 border-t border-border pt-4">
               <Button size="sm" onClick={save}>
                 Uložiť
               </Button>
@@ -144,11 +183,9 @@ export function EditableCard({
                 Zrušiť
               </Button>
             </div>
-          </div>
-        ) : (
-          children
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </EditableCardContext.Provider>
   );
 }
