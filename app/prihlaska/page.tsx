@@ -42,7 +42,7 @@ const NASTROJE = ["Gitara", "Klavír", "Flauta", "Trubka", "Trombón", "Saxofón
 const TANCE = ["Balet", "Moderný tanec", "Jazz", "Hip-hop", "Contemporary", "Spoločenský tanec", "Ľudový tanec", "Stepovanie", "Latino", "Iné"];
 const VODICAK = ["Osobné auto", "Motocykel", "Moped", "Bicykel", "Žiadne"];
 const SPORTY = ["Beh", "Plávanie", "Cyklistika", "Lyžovanie", "Snowboard", "Bežky", "Šerm", "Golf", "Inline korčuľovanie", "Skateboarding", "Korčuľovanie", "Krasokorčuľovanie", "Lezenie na stene", "Horolezectvo", "Fitness", "Kulturistika", "Crossfit", "Aerobik", "Zumba", "Gymnastika", "Joga", "Pilates", "Vodné pólo", "Hokej", "Futbal", "Basketbal", "Volejbal", "Bedminton", "Tenis", "Stolný tenis", "Floorball", "Hokejbal", "Americký futbal", "Windsurfing", "Extrémne športy", "Parkour", "Bowling", "Paragliding", "Šach", "Box", "Kickbox", "Thai-box", "Karate", "Judo", "Wrestling", "Jazda na koni", "Akrobacia", "Lukostreľba", "Streľba z pištole"];
-const ZNAKY = ["Tetovanie", "Piercing", "Rovnátka", "Okuliare", "Jazvy", "Pehy", "Znamienko", "Odstávajúce uši", "Medzera medzi zubami", "Chýbajúce zuby"];
+const ZNAKY = ["Tetovanie", "Piercing", "Strojček na zuby", "Okuliare", "Jazvy", "Pehy", "Znamienko", "Odstávajúce uši", "Medzera medzi zubami", "Chýbajúce zuby"];
 
 // ── Pomocné komponenty ───────────────────────────────────────────────────────
 function Section({
