@@ -95,7 +95,6 @@ function Field({
 
 const grid = "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3";
 
-import { addStudent, nextStudentId } from "@/lib/store";
 import type { Student } from "@/lib/data";
 
 export default function PrihlaskaPage() {
@@ -197,7 +196,7 @@ export default function PrihlaskaPage() {
           e.preventDefault();
           setSubmitting(true);
           const newStudent: Student = {
-            id: nextStudentId(),
+            id: `APP-${Date.now()}`,
             firstName: text.firstName ?? "",
             lastName: text.lastName ?? "",
             preferredName: text.preferredName || undefined,
@@ -290,7 +289,6 @@ export default function PrihlaskaPage() {
             // formulár necháme funkčný a chybu len zalogujeme.
             console.error("Prihláška sa neuložila:", error.message);
           }
-          addStudent(newStudent);
           setSubmitting(false);
           setSubmitted(true);
           window.scrollTo({ top: 0 });

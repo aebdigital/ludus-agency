@@ -1,7 +1,6 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -62,7 +61,7 @@ import {
   type StudentDocument,
 } from "@/lib/data";
 import { getExperience } from "@/lib/experience";
-import { useStudent, useStudentProjects } from "@/lib/store";
+import { useStudent, useStudentProjects, useStoreLoaded } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 
 const kindIcon: Record<string, ComponentType<{ className?: string }>> = {
@@ -340,13 +339,12 @@ export default function StudentDetailPage() {
   const id = params.id;
   const s = useStudent(id);
   const assigned = useStudentProjects(id);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const loaded = useStoreLoaded();
 
   if (!s) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6">
-        {!mounted ? (
+        {!loaded ? (
           <p className="text-sm text-muted-foreground">Načítavam…</p>
         ) : (
           <div className="flex flex-col items-center gap-3">

@@ -8,29 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { AddProjectDialog } from "@/components/projects/add-project-dialog";
 import { ProjectDialog } from "@/components/projects/project-dialog";
-import { baseProjects, phaseVariant, type Project } from "@/lib/projects";
+import { phaseVariant, type Project } from "@/lib/projects";
 import { useProjects } from "@/lib/store";
 import { gradientFromSeed } from "@/lib/utils";
 
 export function ProjectsView() {
-  const custom = useProjects();
+  const projects = useProjects();
   const [addOpen, setAddOpen] = useState(false);
   const [openProject, setOpenProject] = useState<Project | null>(null);
 
-  const projects = useMemo<Project[]>(
-    () => [...custom, ...baseProjects],
-    [custom]
-  );
-
   const summary = useMemo(() => {
     const cast = new Set<string>();
-    custom.forEach((p) => p.studentIds.forEach((id) => cast.add(id)));
+    projects.forEach((p) => p.studentIds.forEach((id) => cast.add(id)));
     return {
       total: projects.length,
       casting: projects.filter((p) => p.phase === "Konkurz").length,
       students: cast.size,
     };
-  }, [projects, custom]);
+  }, [projects]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
