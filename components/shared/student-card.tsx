@@ -32,10 +32,21 @@ export function StudentCard({ student: s }: { student: Student }) {
         className="relative w-24 shrink-0 self-stretch sm:w-28"
         style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.28),transparent_60%)]" />
-        <span className="absolute inset-0 flex items-center justify-center text-3xl font-semibold text-white">
-          {initials(s.firstName, s.lastName)}
-        </span>
+        {s.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={s.photoUrl}
+            alt={`${s.firstName} ${s.lastName}`}
+            className="absolute inset-0 size-full object-cover"
+          />
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.28),transparent_60%)]" />
+            <span className="absolute inset-0 flex items-center justify-center text-3xl font-semibold text-white">
+              {initials(s.firstName, s.lastName)}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Obsah */}

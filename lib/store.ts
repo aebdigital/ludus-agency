@@ -1,9 +1,16 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { type Student } from "@/lib/data";
+import {
+  type Student,
+  type MediaItem,
+  type MediaKind,
+  type StudentDocument,
+  type DocumentKind,
+} from "@/lib/data";
 import { type Project } from "@/lib/projects";
 import { supabase } from "@/lib/supabase/client";
+import { signPaths, uploadFile, sanitizeName, randomId } from "@/lib/storage";
 import { computeAge } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,7 +116,12 @@ const STUDENT_COLS: Record<string, string> = {
   urlIdiv: "url_idiv",
 };
 
-function rowToStudent(r: Row, docs: Row[], media: Row[]): Student {
+function rowToStudent(
+  r: Row,
+  docs: Row[],
+  media: Row[],
+  signMap: Map<string, string>
+): Student {
   return {
     id: r.id,
     firstName: r.first_name ?? "",
@@ -181,6 +193,8 @@ function rowToStudent(r: Row, docs: Row[], media: Row[]): Student {
     urlImdb: r.url_imdb ?? undefined,
     urlCsfd: r.url_csfd ?? undefined,
     urlIdiv: r.url_idiv ?? undefined,
+    photoPath: r.photo_path ?? undefined,
+    photoUrl: r.photo_path ? signMap.get(r.photo_path) : undefined,
     documents: docs.map((d) => ({
       id: d.id,
       name: d.name,
@@ -189,6 +203,7 @@ function rowToStudent(r: Row, docs: Row[], media: Row[]): Student {
       uploadedAt: d.uploaded_at ?? "",
       sizeKb: d.size_kb ?? 0,
       addedBy: d.added_by ?? "",
+      url: d.storage_path ? signMap.get(d.storage_path) : undefined,
     })),
     media: media.map((m) => ({
       id: m.id,
@@ -197,6 +212,7 @@ function rowToStudent(r: Row, docs: Row[], media: Row[]): Student {
       capturedAt: m.captured_at ?? "",
       durationSec: m.duration_sec ?? undefined,
       tag: m.tag ?? "",
+      url: m.storage_path ? signMap.get(m.storage_path) : undefined,
     })),
   };
 }
@@ -254,8 +270,16 @@ async function loadAll() {
 
     const docsBy = groupBy(docs.data ?? [], "student_id");
     const medBy = groupBy(media.data ?? [], "student_id");
+
+    // Sign all storage paths in one batch for display/download.
+    const paths: string[] = [];
+    for (const r of stu.data ?? []) if (r.photo_path) paths.push(r.photo_path);
+    for (const d of docs.data ?? []) if (d.storage_path) paths.push(d.storage_path);
+    for (const m of media.data ?? []) if (m.storage_path) paths.push(m.storage_path);
+    const signMap = await signPaths(paths);
+
     studentsSnapshot = (stu.data ?? []).map((r) =>
-      rowToStudent(r, docsBy[r.id] ?? [], medBy[r.id] ?? [])
+      rowToStudent(r, docsBy[r.id] ?? [], medBy[r.id] ?? [], signMap)
     );
 
     const castBy = groupBy(cast.data ?? [], "project_id");
@@ -410,6 +434,125 @@ async function syncCast(projectId: string, studentIds: string[]) {
       .insert(studentIds.map((sid) => ({ project_id: projectId, student_id: sid })));
     if (ins.error) console.error("syncCast insert:", ins.error.message);
   }
+}
+
+// ── Uploads (Supabase Storage) ───────────────────────────────────────────────
+
+async function sessionEmail(): Promise<string> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.email ?? "—";
+}
+
+export async function setStudentPhoto(
+  studentId: string,
+  file: File
+): Promise<{ error?: string }> {
+  const path = `students/${studentId}/photo-${Date.now()}-${sanitizeName(file.name)}`;
+  const up = await uploadFile(path, file);
+  if (up.error) return { error: up.error };
+
+  const { error } = await supabase
+    .from("ludus_students")
+    .update({ photo_path: path })
+    .eq("id", studentId);
+  if (error) {
+    console.error("setStudentPhoto:", error.message);
+    return { error: error.message };
+  }
+
+  const url = (await signPaths([path])).get(path);
+  studentsSnapshot = studentsSnapshot.map((s) =>
+    s.id === studentId ? { ...s, photoPath: path, photoUrl: url } : s
+  );
+  emit();
+  return {};
+}
+
+export async function addStudentMedia(
+  studentId: string,
+  file: File
+): Promise<{ error?: string }> {
+  const kind: MediaKind = file.type.startsWith("image/")
+    ? "Foto z predstavenia"
+    : "Konkurzné video";
+  const path = `students/${studentId}/media/${randomId()}-${sanitizeName(file.name)}`;
+  const up = await uploadFile(path, file);
+  if (up.error) return { error: up.error };
+
+  const capturedAt = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from("ludus_media")
+    .insert({
+      student_id: studentId,
+      title: file.name,
+      kind,
+      captured_at: capturedAt,
+      tag: "Nahrané",
+      storage_path: path,
+    })
+    .select()
+    .single();
+  if (error) {
+    console.error("addStudentMedia:", error.message);
+    return { error: error.message };
+  }
+
+  const url = (await signPaths([path])).get(path);
+  const item: MediaItem = { id: data.id, title: file.name, kind, capturedAt, tag: "Nahrané", url };
+  studentsSnapshot = studentsSnapshot.map((s) =>
+    s.id === studentId ? { ...s, media: [item, ...s.media] } : s
+  );
+  emit();
+  return {};
+}
+
+export async function addStudentDocument(
+  studentId: string,
+  file: File,
+  kind: DocumentKind
+): Promise<{ error?: string }> {
+  const path = `students/${studentId}/docs/${randomId()}-${sanitizeName(file.name)}`;
+  const up = await uploadFile(path, file);
+  if (up.error) return { error: up.error };
+
+  const uploadedAt = new Date().toISOString().slice(0, 10);
+  const sizeKb = Math.max(1, Math.round(file.size / 1024));
+  const addedBy = await sessionEmail();
+  const { data, error } = await supabase
+    .from("ludus_documents")
+    .insert({
+      student_id: studentId,
+      name: file.name,
+      kind,
+      status: "Podpísané",
+      uploaded_at: uploadedAt,
+      size_kb: sizeKb,
+      added_by: addedBy,
+      storage_path: path,
+    })
+    .select()
+    .single();
+  if (error) {
+    console.error("addStudentDocument:", error.message);
+    return { error: error.message };
+  }
+
+  const url = (await signPaths([path])).get(path);
+  const item: StudentDocument = {
+    id: data.id,
+    name: file.name,
+    kind,
+    status: "Podpísané",
+    uploadedAt,
+    sizeKb,
+    addedBy,
+    url,
+  };
+  studentsSnapshot = studentsSnapshot.map((s) =>
+    s.id === studentId ? { ...s, documents: [item, ...s.documents] } : s
+  );
+  emit();
+  return {};
 }
 
 export function nextStudentId(): string {

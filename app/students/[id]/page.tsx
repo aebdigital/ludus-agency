@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -20,6 +21,7 @@ import {
   FileText,
   Download,
   Plus,
+  Loader2,
   Weight,
   Quote,
   GraduationCap,
@@ -59,9 +61,16 @@ import {
   EYE_COLORS,
   HAIR_COLORS,
   type StudentDocument,
+  type DocumentKind,
 } from "@/lib/data";
 import { getExperience } from "@/lib/experience";
-import { useStudent, useStudentProjects, useStoreLoaded } from "@/lib/store";
+import {
+  useStudent,
+  useStudentProjects,
+  useStoreLoaded,
+  addStudentDocument,
+  addStudentMedia,
+} from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 
 const kindIcon: Record<string, ComponentType<{ className?: string }>> = {
@@ -254,13 +263,77 @@ function TextareaSection({
   );
 }
 
+function MediaUpload({ studentId }: { studentId: string }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const onFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    setBusy(true);
+    for (const f of files) {
+      const { error } = await addStudentMedia(studentId, f);
+      if (error) {
+        alert(`Súbor sa nepodarilo nahrať: ${error}`);
+        break;
+      }
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="mb-4 flex justify-end">
+      <Button
+        size="sm"
+        variant="outline"
+        className="gap-1.5"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+      >
+        {busy ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : (
+          <Plus className="size-4" />
+        )}
+        Pridať médiá
+      </Button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        className="hidden"
+        onChange={onFiles}
+      />
+    </div>
+  );
+}
+
 function DocSection({
   title,
   docs,
+  studentId,
+  defaultKind,
 }: {
   title: string;
   docs: StudentDocument[];
+  studentId: string;
+  defaultKind: DocumentKind;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    const { error } = await addStudentDocument(studentId, file, defaultKind);
+    setBusy(false);
+    if (error) alert(`Dokument sa nepodarilo nahrať: ${error}`);
+  };
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex-row items-center justify-between">
@@ -268,9 +341,26 @@ function DocSection({
           <CardTitle>{title}</CardTitle>
           <Badge variant="secondary">{docs.length}</Badge>
         </div>
-        <Button size="sm" variant="outline" className="gap-1.5">
-          <Plus className="size-4" /> Nahrať
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+        >
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Plus className="size-4" />
+          )}
+          Nahrať
         </Button>
+        <input
+          ref={inputRef}
+          type="file"
+          className="hidden"
+          onChange={onFile}
+        />
       </CardHeader>
       <CardContent className="p-0">
         {docs.length === 0 ? (
@@ -314,14 +404,26 @@ function DocSection({
                       <DocStatusBadge status={d.status} />
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        disabled={!d.sizeKb}
-                        aria-label="Stiahnuť"
-                      >
-                        <Download className="size-4" />
-                      </Button>
+                      {d.url ? (
+                        <a
+                          href={d.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Stiahnuť"
+                          className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                        >
+                          <Download className="size-4" />
+                        </a>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          disabled
+                          aria-label="Stiahnuť"
+                        >
+                          <Download className="size-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
@@ -800,13 +902,24 @@ export default function StudentDetailPage() {
             {/* DOKUMENTY */}
             <TabsContent value="documents">
               <div className="space-y-5">
-                <DocSection title="Agentúra" docs={agentura} />
-                <DocSection title="Rodičia" docs={rodicia} />
+                <DocSection
+                  title="Agentúra"
+                  docs={agentura}
+                  studentId={s.id}
+                  defaultKind="Zmluva o štúdiu"
+                />
+                <DocSection
+                  title="Rodičia"
+                  docs={rodicia}
+                  studentId={s.id}
+                  defaultKind="Súhlas rodiča"
+                />
               </div>
             </TabsContent>
 
             {/* MÉDIÁ */}
             <TabsContent value="media">
+              <MediaUpload studentId={s.id} />
               {s.media.length === 0 ? (
                 <Card className="py-12 text-center text-sm text-muted-foreground">
                   Žiadne médiá.

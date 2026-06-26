@@ -1,19 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { Pencil } from "lucide-react";
+import { useRef, useState } from "react";
+import { Pencil, Camera, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/badges";
-import { updateStudent } from "@/lib/store";
+import { setStudentPhoto, updateStudent } from "@/lib/store";
 import { gradientFromSeed, initials } from "@/lib/utils";
 import { STATUSES, type Student } from "@/lib/data";
 
 export function ProfileCard({ student: s }: { student: Student }) {
   const { from, to } = gradientFromSeed(s.firstName + s.lastName);
   const [editing, setEditing] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const onPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingPhoto(true);
+    const { error } = await setStudentPhoto(s.id, file);
+    setUploadingPhoto(false);
+    if (error) alert(`Fotku sa nepodarilo nahrať: ${error}`);
+  };
   const [draft, setDraft] = useState({
     firstName: s.firstName,
     lastName: s.lastName,
@@ -47,10 +59,42 @@ export function ProfileCard({ student: s }: { student: Student }) {
         className="relative aspect-square w-full"
         style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.28),transparent_60%)]" />
-        <span className="absolute inset-0 flex items-center justify-center text-7xl font-semibold text-white">
-          {initials(s.firstName, s.lastName)}
-        </span>
+        {s.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={s.photoUrl}
+            alt={`${s.firstName} ${s.lastName}`}
+            className="absolute inset-0 size-full object-cover"
+          />
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgba(255,255,255,0.28),transparent_60%)]" />
+            <span className="absolute inset-0 flex items-center justify-center text-7xl font-semibold text-white">
+              {initials(s.firstName, s.lastName)}
+            </span>
+          </>
+        )}
+
+        <button
+          type="button"
+          onClick={() => photoRef.current?.click()}
+          disabled={uploadingPhoto}
+          className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-md bg-card/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-card disabled:opacity-70"
+        >
+          {uploadingPhoto ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Camera className="size-3.5" />
+          )}
+          {s.photoUrl ? "Zmeniť fotku" : "Pridať fotku"}
+        </button>
+        <input
+          ref={photoRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onPhoto}
+        />
       </div>
 
       {!editing && (

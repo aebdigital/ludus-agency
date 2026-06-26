@@ -27,6 +27,7 @@ export interface StudentDocument {
   uploadedAt: string;
   sizeKb: number;
   addedBy: string;
+  url?: string; // signed download URL (Supabase Storage)
 }
 
 export type MediaKind =
@@ -42,6 +43,7 @@ export interface MediaItem {
   capturedAt: string;
   durationSec?: number; // iba videá
   tag: string;
+  url?: string; // signed URL (Supabase Storage)
 }
 
 export interface Student {
@@ -83,6 +85,9 @@ export interface Student {
   // Voľný text
   bio: string;
   tutorNote: string;
+  // Hlavná fotka (Supabase Storage)
+  photoPath?: string;
+  photoUrl?: string; // signed URL
   // Prílohy
   documents: StudentDocument[];
   media: MediaItem[];
