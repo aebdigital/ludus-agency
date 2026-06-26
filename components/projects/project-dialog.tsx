@@ -1,12 +1,13 @@
 "use client";
 
-import { Star, Share2 } from "lucide-react";
+import { Star, Share2, FileDown } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { phaseVariant, type Project } from "@/lib/projects";
 import { useProjects, useStudents, updateProject } from "@/lib/store";
+import { printCandidatesPdf } from "@/lib/export";
 import { cn } from "@/lib/utils";
 
 export function ProjectDialog({
@@ -84,18 +85,31 @@ export function ProjectDialog({
         .filter(Boolean)
         .join(" · ")}
       footer={
-        <div className="flex w-full items-center justify-between">
+        <div className="flex w-full items-center justify-between gap-2">
           <Button variant="ghost" size="sm" onClick={onClose}>
             Zavrieť
           </Button>
-          <Button
-            size="sm"
-            className="gap-1.5"
-            disabled={cast.length === 0}
-            onClick={shareCastInfo}
-          >
-            <Share2 className="size-4" /> Zdieľať obsadenie
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={cast.length === 0}
+              onClick={() =>
+                printCandidatesPdf(cast, `Obsadenie — ${project.title}`)
+              }
+            >
+              <FileDown className="size-4" /> Export PDF
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              disabled={cast.length === 0}
+              onClick={shareCastInfo}
+            >
+              <Share2 className="size-4" /> Zdieľať obsadenie
+            </Button>
+          </div>
         </div>
       }
     >
