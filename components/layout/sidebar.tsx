@@ -7,7 +7,7 @@ import {
   Clapperboard,
   Settings,
   Drama,
-  ClipboardList,
+  Inbox,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 const nav = [
   { label: "Študenti", href: "/students", icon: Users },
   { label: "Projekty", href: "/productions", icon: Clapperboard },
-  { label: "Prihláška", href: "/prihlaska", icon: ClipboardList },
+  { label: "Prihlášky", href: "/applications", icon: Inbox },
   { label: "Nastavenia", href: "/settings", icon: Settings },
 ];
 

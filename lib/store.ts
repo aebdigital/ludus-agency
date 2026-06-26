@@ -555,6 +555,43 @@ export async function addStudentDocument(
   return {};
 }
 
+// Creates a student from an application payload (the /prihlaska data). Queries
+// the DB for the next free id so it works even if the store isn't loaded.
+export async function createStudentFromData(
+  data: Partial<Student>
+): Promise<{ id?: string; error?: string }> {
+  const { data: rows, error: idErr } = await supabase
+    .from("ludus_students")
+    .select("id");
+  if (idErr) {
+    console.error("createStudentFromData ids:", idErr.message);
+    return { error: idErr.message };
+  }
+  let max = 1041;
+  for (const r of rows ?? []) {
+    const n = parseInt(String(r.id).replace(/\D/g, ""), 10);
+    if (!Number.isNaN(n) && n > max) max = n;
+  }
+  const id = `STU-${max + 1}`;
+  const student = {
+    ...(data as Student),
+    id,
+    status: (data.status as Student["status"]) || "Konkurz",
+    documents: [],
+    media: [],
+  };
+  const { error } = await supabase
+    .from("ludus_students")
+    .insert({ id, ...studentPatchToRow(student) });
+  if (error) {
+    console.error("createStudentFromData insert:", error.message);
+    return { error: error.message };
+  }
+  studentsSnapshot = [student, ...studentsSnapshot];
+  emit();
+  return { id };
+}
+
 export function nextStudentId(): string {
   let max = 1041;
   for (const s of studentsSnapshot) {
