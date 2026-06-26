@@ -2,8 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Clapperboard, Settings, Drama, ClipboardList } from "lucide-react";
+import {
+  Users,
+  Clapperboard,
+  Settings,
+  Drama,
+  ClipboardList,
+  LogOut,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/auth/auth-provider";
 
 const nav = [
   { label: "Študenti", href: "/students", icon: Users },
@@ -14,8 +22,12 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
   const isActive = (href: string) => pathname.startsWith(href);
+
+  const email = user?.email ?? "";
+  const initials = (email.slice(0, 2) || "??").toUpperCase();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-sidebar text-sidebar-foreground lg:flex">
@@ -70,19 +82,28 @@ export function Sidebar() {
       {/* Používateľ */}
       <div className="flex items-center gap-3 border-t border-sidebar-border px-4 py-3">
         <div
-          className="flex size-9 items-center justify-center rounded-full text-sm font-semibold text-white"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
           style={{
             backgroundImage:
               "linear-gradient(135deg, oklch(0.65 0.13 200), oklch(0.55 0.15 250))",
           }}
         >
-          KB
+          {initials}
         </div>
-        <div className="min-w-0 leading-tight">
+        <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-sm font-medium text-white">
-            Katarína Baranová
+            {email || "Neprihlásený"}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => signOut()}
+          title="Odhlásiť sa"
+          aria-label="Odhlásiť sa"
+          className="shrink-0 rounded-md p-1.5 text-sidebar-muted transition-colors hover:bg-sidebar-accent/60 hover:text-white"
+        >
+          <LogOut className="size-4" />
+        </button>
       </div>
     </aside>
   );

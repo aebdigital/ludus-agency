@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/topbar";
+import { AppShell } from "@/components/layout/app-shell";
 
 export const metadata: Metadata = {
   title: "Ludus · Databáza divadelnej školy",
@@ -17,11 +16,7 @@ export default function RootLayout({
   return (
     <html lang="sk" className="h-full antialiased">
       <body className="min-h-full">
-        <Sidebar />
-        <div className="lg:pl-64">
-          <Topbar />
-          <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

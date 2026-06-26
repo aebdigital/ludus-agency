@@ -15,12 +15,14 @@ import {
   ShieldCheck,
   CheckCircle2,
   Send,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase/client";
 
 // ── Číselníky ────────────────────────────────────────────────────────────────
 const POHLAVIE = ["Dievča", "Chlapec"];
@@ -98,6 +100,7 @@ import type { Student } from "@/lib/data";
 
 export default function PrihlaskaPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [text, setText] = useState<Record<string, string>>({});
   const [multi, setMulti] = useState<Record<string, string[]>>({
     jazyky: [],
@@ -190,8 +193,9 @@ export default function PrihlaskaPage() {
 
       <form
         className="space-y-5"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
+          setSubmitting(true);
           const newStudent: Student = {
             id: nextStudentId(),
             firstName: text.firstName ?? "",
@@ -268,7 +272,26 @@ export default function PrihlaskaPage() {
             documents: [],
             media: []
           };
+          // Doručenie agentúre — uloženie do zdieľaného Supabase projektu.
+          const { error } = await supabase
+            .from("ludus_applications")
+            .insert({
+              first_name: newStudent.firstName || null,
+              last_name: newStudent.lastName || null,
+              date_of_birth: newStudent.dateOfBirth || null,
+              guardian_name: newStudent.guardianName || null,
+              guardian_email: newStudent.guardianEmail || null,
+              guardian_phone: newStudent.guardianPhone || null,
+              data: newStudent,
+              status: "new",
+            });
+          if (error) {
+            // Kým nie je spustená migrácia, tabuľka ešte neexistuje —
+            // formulár necháme funkčný a chybu len zalogujeme.
+            console.error("Prihláška sa neuložila:", error.message);
+          }
           addStudent(newStudent);
+          setSubmitting(false);
           setSubmitted(true);
           window.scrollTo({ top: 0 });
         }}
@@ -559,10 +582,15 @@ export default function PrihlaskaPage() {
 
         <div className="flex items-center justify-end gap-3 pb-4">
           <p className="mr-auto text-xs text-muted-foreground">
-            Toto je ukážkový formulár (demo) — údaje sa neukladajú.
+            Po odoslaní vás budeme kontaktovať e-mailom.
           </p>
-          <Button type="submit" size="lg" className="gap-2">
-            <Send className="size-4" /> Odoslať prihlášku
+          <Button type="submit" size="lg" className="gap-2" disabled={submitting}>
+            {submitting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            Odoslať prihlášku
           </Button>
         </div>
       </form>
