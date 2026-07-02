@@ -5,8 +5,7 @@ import {
   Search,
   Check,
   SlidersHorizontal,
-  FileDown,
-  Mail,
+  Share2,
   X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,7 @@ import {
   STATUSES,
   type Student,
 } from "@/lib/data";
-import { printCandidatesPdf, shareCandidates } from "@/lib/export";
+import { CandidateShareDialog } from "@/components/projects/candidate-share-dialog";
 import { cn } from "@/lib/utils";
 
 const emptyFilters = {
@@ -41,13 +40,16 @@ export function CandidateFinder({
   students,
   selected,
   onToggle,
+  showShareAction = true,
 }: {
   students: Student[];
   selected: string[];
   onToggle: (id: string) => void;
+  showShareAction?: boolean;
 }) {
   const [q, setQ] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [f, setF] = useState(emptyFilters);
   const set = <K extends keyof typeof emptyFilters>(k: K, v: string) =>
     setF((p) => ({ ...p, [k]: v }));
@@ -240,28 +242,20 @@ export function CandidateFinder({
             Zrušiť výber
           </Button>
         )}
-        <div className="ml-auto flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            disabled={selected.length === 0}
-            onClick={() => printCandidatesPdf(selectedStudents)}
-          >
-            <FileDown className="size-4" /> Export PDF
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            disabled={selected.length === 0}
-            onClick={() => shareCandidates(selectedStudents)}
-          >
-            <Mail className="size-4" /> E-mail
-          </Button>
-        </div>
+        {showShareAction && (
+          <div className="ml-auto flex gap-2">
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              className="gap-1.5"
+              disabled={selected.length === 0}
+              onClick={() => setShareOpen(true)}
+            >
+              <Share2 className="size-4" /> Zdieľať
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* results */}
@@ -314,6 +308,14 @@ export function CandidateFinder({
           </p>
         )}
       </div>
+
+      {showShareAction && (
+        <CandidateShareDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          students={selectedStudents}
+        />
+      )}
     </div>
   );
 }

@@ -4,6 +4,9 @@ import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+let bodyLockCount = 0;
+let previousBodyOverflow = "";
+
 export function Dialog({
   open,
   onClose,
@@ -12,6 +15,7 @@ export function Dialog({
   children,
   footer,
   className,
+  bodyClassName,
 }: {
   open: boolean;
   onClose: () => void;
@@ -20,6 +24,7 @@ export function Dialog({
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  bodyClassName?: string;
 }) {
   React.useEffect(() => {
     if (!open) return;
@@ -27,11 +32,17 @@ export function Dialog({
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (bodyLockCount === 0) {
+      previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    bodyLockCount += 1;
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      bodyLockCount = Math.max(0, bodyLockCount - 1);
+      if (bodyLockCount === 0) {
+        document.body.style.overflow = previousBodyOverflow;
+      }
     };
   }, [open, onClose]);
 
@@ -70,7 +81,12 @@ export function Dialog({
             </button>
           </div>
 
-          <div className="max-h-[65vh] overflow-y-auto px-5 py-4 scrollbar-thin">
+          <div
+            className={cn(
+              "max-h-[65vh] overflow-y-auto px-5 py-4 scrollbar-thin",
+              bodyClassName
+            )}
+          >
             {children}
           </div>
 

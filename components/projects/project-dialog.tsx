@@ -1,13 +1,15 @@
 "use client";
 
-import { Star, Share2, FileDown } from "lucide-react";
+import { useState } from "react";
+import { Star, Share2, UserPlus } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { CandidateFinder } from "@/components/projects/candidate-finder";
+import { CandidateShareDialog } from "@/components/projects/candidate-share-dialog";
 import { phaseVariant, type Project } from "@/lib/projects";
 import { useProjects, useStudents, updateProject } from "@/lib/store";
-import { printCandidatesPdf } from "@/lib/export";
 import { cn } from "@/lib/utils";
 
 export function ProjectDialog({
@@ -18,11 +20,14 @@ export function ProjectDialog({
   onClose: () => void;
 }) {
   const students = useStudents();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [draftStudentIds, setDraftStudentIds] = useState<string[]>([]);
   // Pre vlastné projekty čítaj živú verziu zo store (aby sa hlavná postava prejavila hneď).
   const live = useProjects().find((p) => p.id === project.id) ?? project;
   const mainId = live.mainStudentId;
 
-  const cast = project.studentIds
+  const cast = live.studentIds
     .map((id) => students.find((s) => s.id === id))
     .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
@@ -35,84 +40,75 @@ export function ProjectDialog({
     });
   };
 
-  const shareCastInfo = async () => {
-    const text = [
-      `Projekt: ${project.title}`,
-      `Termín: ${project.dates !== "—" ? project.dates : "—"}`,
-      `Miesto: ${project.venue !== "—" ? project.venue : "—"}`,
-      "",
-      "Obsadení študenti:",
-      ...cast.map((st, i) => {
-        const dobStr = st.dateOfBirth
-          ? st.dateOfBirth.split("-").reverse().join(".")
-          : "—";
-        return [
-          `${i + 1}. ${st.lastName} ${st.firstName}`,
-          `   - Vek: ${st.age} r. (${dobStr})`,
-          `   - Výška: ${st.heightCm || "—"} cm, Hmotnosť: ${st.weightKg || "—"} kg`,
-          `   - Kontakt: ${st.email || "—"} · ${st.phone || "—"}`,
-          `   - Pedagóg: ${st.teacher || "—"}`,
-          `   - Zručnosti: ${st.skills.join(", ") || "—"}`,
-          `   - Jazyky: ${st.languages.join(", ") || "—"}`,
-          ""
-        ].join("\n");
-      })
-    ].join("\n");
+  const openEditCast = () => {
+    setDraftStudentIds(live.studentIds);
+    setEditOpen(true);
+  };
 
-    const title = `Obsadenie projektu: ${project.title}`;
+  const toggleDraftStudent = (id: string) => {
+    setDraftStudentIds((current) =>
+      current.includes(id)
+        ? current.filter((studentId) => studentId !== id)
+        : [...current, id]
+    );
+  };
 
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-        });
-      } catch (err) {
-        console.error("Zdieľanie zlyhalo:", err);
-      }
-    } else {
-      const mailtoUrl = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`;
-      window.location.href = mailtoUrl;
-    }
+  const saveCast = () => {
+    const nextStudentIds = draftStudentIds.filter(
+      (id, index, all) => all.indexOf(id) === index
+    );
+    const mainStillAssigned = mainId ? nextStudentIds.includes(mainId) : true;
+    updateProject(project.id, {
+      studentIds: nextStudentIds,
+      castFilled: nextStudentIds.length,
+      ...(mainStillAssigned
+        ? {}
+        : { mainStudentId: undefined, phase: "Konkurz" as const }),
+    });
+    setEditOpen(false);
+  };
+
+  const closeAfterPdfOpen = () => {
+    setShareOpen(false);
+    setEditOpen(false);
+    onClose();
   };
 
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      title={project.title}
-      description={[project.program, project.dates !== "—" ? project.dates : null]
-        .filter(Boolean)
-        .join(" · ")}
-      footer={
-        <div className="flex w-full items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Zavrieť
-          </Button>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              disabled={cast.length === 0}
-              onClick={() =>
-                printCandidatesPdf(cast, `Obsadenie — ${project.title}`)
-              }
-            >
-              <FileDown className="size-4" /> Export PDF
+    <>
+      <Dialog
+        open
+        onClose={onClose}
+        title={project.title}
+        description={[project.program, project.dates !== "—" ? project.dates : null]
+          .filter(Boolean)
+          .join(" · ")}
+        footer={
+          <div className="flex w-full items-center justify-between gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Zavrieť
             </Button>
-            <Button
-              size="sm"
-              className="gap-1.5"
-              disabled={cast.length === 0}
-              onClick={shareCastInfo}
-            >
-              <Share2 className="size-4" /> Zdieľať obsadenie
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={openEditCast}
+              >
+                <UserPlus className="size-4" /> Upraviť študentov
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5"
+                disabled={cast.length === 0}
+                onClick={() => setShareOpen(true)}
+              >
+                <Share2 className="size-4" /> Zdieľať obsadenie
+              </Button>
+            </div>
           </div>
-        </div>
-      }
-    >
+        }
+      >
       <div className="mb-3 flex items-center gap-2">
         <Badge variant={phaseVariant[project.phase]}>{project.phase}</Badge>
       </div>
@@ -155,6 +151,40 @@ export function ProjectDialog({
           })}
         </div>
       )}
-    </Dialog>
+      </Dialog>
+      <CandidateShareDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        onPdfOpened={closeAfterPdfOpen}
+        students={cast}
+        title="Zdieľať obsadenie"
+        heading={`Obsadenie — ${project.title}`}
+        description={`${cast.length} študentov v obsadení · nastavenia platia pre všetkých`}
+      />
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Upraviť študentov"
+        description={`${draftStudentIds.length} vybraných pre projekt ${project.title}`}
+        bodyClassName="max-h-[72vh]"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setEditOpen(false)}>
+              Zrušiť
+            </Button>
+            <Button size="sm" onClick={saveCast}>
+              Uložiť obsadenie ({draftStudentIds.length})
+            </Button>
+          </>
+        }
+      >
+        <CandidateFinder
+          students={students}
+          selected={draftStudentIds}
+          onToggle={toggleDraftStudent}
+          showShareAction={false}
+        />
+      </Dialog>
+    </>
   );
 }
